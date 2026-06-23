@@ -1,0 +1,19 @@
+{
+  "name": "BIM Viewer — Construction Sequence 3D",
+  "short_name": "BIM Viewer",
+  "description": "Interactive 3D construction sequence viewer with stage-by-stage BIM models for multiple infrastructure projects.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0b1120",
+  "theme_color": "#0b1120",
+  "categories": ["construction", "productivity", "visualization"],
+  "lang": "en",
+  "icons": [
+    { "src": "icons/icon-192.svg", "sizes": "192x192", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icons/icon-192.svg", "sizes": "192x192", "type": "image/svg+xml", "purpose": "maskable" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
