@@ -28,28 +28,12 @@ with open("bridge_model_20260623114352.glb", "rb") as f:
         print(f"  [{i}] {mat['name']}: bcf={bcf}, rough={rough}, metal={metal}")
     print()
 
-    # Check first few meshes
-    for mesh_idx in [0, 4, 12, 15, 18, 23]:
+    # Check first few meshes for COLOR_0
+    print("=== Mesh attributes ===")
+    for mesh_idx in range(min(6, len(gltf["meshes"]))):
         mesh = gltf["meshes"][mesh_idx]
         prim = mesh["primitives"][0]
-        col_idx = prim["attributes"]["COLOR_0"]
-        acc = gltf["accessors"][col_idx]
-        bv = gltf["bufferViews"][acc["bufferView"]]
-        comp_type = acc["componentType"]
-        nrm = acc.get("normalized", False)
-        offset = bv.get("byteOffset", 0)
-
-        dtype = np.uint8 if comp_type == 5121 else np.float32
-        ncols = 4 if acc["type"] == "VEC4" else 3
-        count = acc["count"]
-        arr = np.frombuffer(bin_buf, dtype=dtype, count=count * ncols,
-                            offset=offset).reshape(count, ncols)
-
+        attrs = prim.get("attributes", {})
+        has_color = "COLOR_0" in attrs
         mat_name = gltf["materials"][prim["material"]]["name"]
-        print(f"[{mesh_idx}] {mat_name}: type={acc['type']}, "
-              f"compType={comp_type}, norm={nrm}, count={count}")
-        print(f"  min={arr.min(axis=0).tolist()} "
-              f"max={arr.max(axis=0).tolist()} "
-              f"mean={arr.mean(axis=0).round(1).tolist()}")
-        print(f"  first 3 verts: {arr[:3].tolist()}")
-        print()
+        print(f"  Mesh[{mesh_idx}] {mat_name}: COLOR_0={has_color}")

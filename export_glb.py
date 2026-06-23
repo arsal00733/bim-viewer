@@ -537,12 +537,8 @@ for meshes, name in groups:
     if valid:
         merged = trimesh.util.concatenate(valid)
         merged = flat_shade(merged)
-        # Reset vertex colors to white (identity), then apply crease+noise as multipliers
-        nv = len(merged.vertices)
-        white_vc = np.full((nv, 4), 255, dtype=np.uint8)
-        merged.visual = trimesh.visual.ColorVisuals(mesh=merged, vertex_colors=white_vc)
-        merged = darken_creases(merged, strength=0.2)
-        merged = add_concrete_noise(merged, intensity=5)
+        # Strip vertex colors — use only baseColorFactor for colour
+        merged.visual = trimesh.visual.ColorVisuals(mesh=merged)
         merged.apply_transform(z_to_y_up)
         # PBR parameters per component type (lower roughness = sharper highlights)
         if any(kw in name for kw in ['Handrail']):
