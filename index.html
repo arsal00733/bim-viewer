@@ -316,12 +316,12 @@
 
         /* CAD Dimension Label — positioned by JS */
         .dim-badge {
-            position: absolute;
-            z-index: 110;
-            background: rgba(15, 23, 42, 0.92);
-            border: 1px solid rgba(255,255,255,0.25);
-            color: #f1f5f9;
-            padding: 2px 7px;
+            position: fixed;
+            z-index: 9999;
+            background: rgba(10, 14, 30, 0.93);
+            border: 1.5px solid #60a5fa;
+            color: #e2e8f0;
+            padding: 2px 8px;
             border-radius: 4px;
             font-size: 11px;
             font-weight: 700;
@@ -930,7 +930,7 @@
     <div id="dim-badge-h" class="dim-badge">H: -</div>
 
     <!-- SVG overlay for CAD dimension lines -->
-    <svg id="dimensionOverlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 99; display: none;"></svg>
+    <svg id="dimensionOverlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9999; display: none;"></svg>
 
     <!-- Presentation Vignette Blur -->
     <div id="vignetteOverlay"></div>
@@ -1391,24 +1391,25 @@
             const vr = modelViewer.getBoundingClientRect();
             const W = vr.width, H = vr.height;
 
+            // getBoundingClientRect is the most reliable — works regardless of
+            // how model-viewer internally applies its CSS transform to hotspots.
             function getScreenPos(id) {
                 const el = document.getElementById(id);
                 if (!el) return null;
-                const t = el.style.transform;
-                if (t) {
-                    const m = t.match(/translate3d\(([-0-9.]+)px,\s*([-0-9.]+)px/);
-                    if (m) return { x: +m[1], y: +m[2] };
-                }
                 const r = el.getBoundingClientRect();
-                if (!r.width && !r.height) return null;
-                return { x: r.left - vr.left + r.width / 2, y: r.top - vr.top + r.height / 2 };
+                // Use page-absolute coordinates (fixed positioning for badges)
+                return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
             }
 
             const p1 = getScreenPos('hotspot-p1');
             const p2 = getScreenPos('hotspot-p2');
             const p3 = getScreenPos('hotspot-p3');
             const p4 = getScreenPos('hotspot-p4');
-            if (!p1) return;
+
+            // Bail if all points are at the same spot (hotspots not yet projected)
+            if (!p1 || !p2 || !p3 || !p4) return;
+            const spread = Math.hypot(p2.x-p1.x, p2.y-p1.y) + Math.hypot(p3.x-p1.x, p3.y-p1.y);
+            if (spread < 5) return; // hotspots not positioned yet, skip this frame
 
             const OFFSET = 44;
             const XTICK  = 10;
@@ -1427,7 +1428,9 @@
 
                 const nx = -dy / len, ny = dx / len;
                 const cx = (ptA.x + ptB.x) / 2, cy = (ptA.y + ptB.y) / 2;
-                const sign = (nx * (cx - W / 2) + ny * (cy - H / 2)) >= 0 ? 1 : -1;
+                // Use page-center for outward direction since coords are page-absolute
+                const pcx = vr.left + W / 2, pcy = vr.top + H / 2;
+                const sign = (nx * (cx - pcx) + ny * (cy - pcy)) >= 0 ? 1 : -1;
 
                 const ox = sign * nx * OFFSET, oy = sign * ny * OFFSET;
                 const ex = sign * nx * (OFFSET + XTICK), ey = sign * ny * (OFFSET + XTICK);
