@@ -330,8 +330,10 @@
         }
         #vignetteOverlay.active { opacity: 1; }
 
-        /* 3D Dimension Label Badges (model-viewer hotspots) */
+        /* 2D Dimension Label Overlays */
         .dim-badge {
+            position: absolute;
+            z-index: 100;
             background: rgba(10, 18, 36, 0.90);
             backdrop-filter: blur(6px);
             -webkit-backdrop-filter: blur(6px);
@@ -345,11 +347,10 @@
             white-space: nowrap;
             box-shadow: 0 0 10px rgba(0, 120, 245, 0.5), 0 2px 8px rgba(0,0,0,0.5);
             pointer-events: none;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-            display: none; /* Hide by default so they don't render at 0,0,0 */
+            display: none; /* Hide by default */
+            transform: translate(-50%, -50%);
+            transition: opacity 0.2s ease;
         }
-        .dim-badge[data-visible] { opacity: 1; }
 
         /* Mobile Adjustments */
         @media (max-width: 768px) {
@@ -941,12 +942,12 @@
         <div slot="hotspot-p2" id="hotspot-p2" data-position="0 0 0"></div>
         <div slot="hotspot-p3" id="hotspot-p3" data-position="0 0 0"></div>
         <div slot="hotspot-p4" id="hotspot-p4" data-position="0 0 0"></div>
-
-        <!-- 3D Dimension Label Hotspots -->
-        <div slot="hotspot-dim-l" id="hotspot-dim-l" class="dim-badge" data-position="0 0 0">L: -</div>
-        <div slot="hotspot-dim-w" id="hotspot-dim-w" class="dim-badge" data-position="0 0 0">W: -</div>
-        <div slot="hotspot-dim-h" id="hotspot-dim-h" class="dim-badge" data-position="0 0 0">H: -</div>
     </model-viewer>
+
+    <!-- 2D Dimension Label Overlays (positioned dynamically in JS) -->
+    <div id="dim-badge-l" class="dim-badge">L: -</div>
+    <div id="dim-badge-w" class="dim-badge">W: -</div>
+    <div id="dim-badge-h" class="dim-badge">H: -</div>
 
     <!-- SVG overlay for CAD dimension lines -->
     <svg id="dimensionOverlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 99; display: none;"></svg>
@@ -1318,13 +1319,10 @@
             document.getElementById('dimensionOverlay').style.display = 'none';
             document.getElementById('vignetteOverlay').classList.remove('active');
             
-            // Hide 3D dimension badges and reset positions
-            ['hotspot-dim-l', 'hotspot-dim-w', 'hotspot-dim-h'].forEach(id => {
+            // Hide 2D dimension badges
+            ['dim-badge-l', 'dim-badge-w', 'dim-badge-h'].forEach(id => {
                 const el = document.getElementById(id);
-                if (el) {
-                    el.style.display = 'none';
-                    el.removeAttribute('data-position');
-                }
+                if (el) el.style.display = 'none';
             });
             ['hotspot-p1', 'hotspot-p2', 'hotspot-p3', 'hotspot-p4'].forEach(id => {
                 const el = document.getElementById(id);
@@ -1332,12 +1330,11 @@
             });
             
             if (modelViewer.model) {
-                modelViewer.model.materials.forEach(m =>
-                    m.pbrMetallicRoughness.setBaseColorFactor([1, 1, 1, 1])
-                );
+                modelViewer.model.materials.forEach(m => {
+                    m.setAlphaMode('OPAQUE');
+                    m.pbrMetallicRoughness.setBaseColorFactor([1, 1, 1, 1]);
+                });
             }
-        };
-
         modelViewer.addEventListener('click', (event) => {
             if (!measurementModeActive) return;
             const material = modelViewer.materialFromPoint(event.clientX, event.clientY);
@@ -1351,21 +1348,15 @@
                 document.getElementById('hotspot-p3').setAttribute('data-position', comp.p3.join(' '));
                 document.getElementById('hotspot-p4').setAttribute('data-position', comp.p4.join(' '));
 
-                // Place 3D dimension label badges at midpoints of each edge
-                const midL = comp.p1.map((v, i) => (v + comp.p2[i]) / 2);
-                const midW = comp.p1.map((v, i) => (v + comp.p3[i]) / 2);
-                const midH = comp.p1.map((v, i) => (v + comp.p4[i]) / 2);
-                const dimL = document.getElementById('hotspot-dim-l');
-                const dimW = document.getElementById('hotspot-dim-w');
-                const dimH = document.getElementById('hotspot-dim-h');
-                dimL.setAttribute('data-position', midL.join(' '));
-                dimW.setAttribute('data-position', midW.join(' '));
-                dimH.setAttribute('data-position', midH.join(' '));
+                // Update 2D dimension badge texts
+                const dimL = document.getElementById('dim-badge-l');
+                const dimW = document.getElementById('dim-badge-w');
+                const dimH = document.getElementById('dim-badge-h');
                 dimL.textContent = 'L: ' + comp.l;
                 dimW.textContent = 'W: ' + comp.b;
                 dimH.textContent = 'H: ' + comp.h;
 
-                // Show 3D dimension badges
+                // Show 2D dimension badges
                 dimL.style.display = 'block';
                 dimW.style.display = 'block';
                 dimH.style.display = 'block';
@@ -1384,12 +1375,14 @@
                 // Activate presentation vignette
                 document.getElementById('vignetteOverlay').classList.add('active');
 
-                // Ghost out all non-selected meshes completely (100% transparent isolation mode)
+                // Ghost out all non-selected meshes completely (soft transparent outline)
                 modelViewer.model.materials.forEach(m => {
                     if (m.name === material.name) {
+                        m.setAlphaMode('OPAQUE');
                         m.pbrMetallicRoughness.setBaseColorFactor([1, 1, 1, 1]);
                     } else {
-                        m.pbrMetallicRoughness.setBaseColorFactor([0, 0, 0, 0]);
+                        m.setAlphaMode('BLEND');
+                        m.pbrMetallicRoughness.setBaseColorFactor([1, 1, 1, 0.08]);
                     }
                 });
             } else {
@@ -1439,6 +1432,9 @@
         function updateDimensions() {
             if (!measurementModeActive || !activeComponentKey) {
                 document.getElementById('dimensionOverlay').style.display = 'none';
+                ['dim-badge-l', 'dim-badge-w', 'dim-badge-h'].forEach(id => {
+                    document.getElementById(id).style.display = 'none';
+                });
                 return;
             }
             const comp = db[activeComponentKey];
@@ -1463,6 +1459,20 @@
             function getScreenPos(id) {
                 const el = document.getElementById(id);
                 if (!el) return null;
+                
+                // Parse translation from transform style (works even when occluded/scaled to 0)
+                const transform = el.style.transform;
+                if (transform) {
+                    const match = transform.match(/translate3d\(([-0-9.]+)px,\s*([-0-9.]+)px/);
+                    if (match) {
+                        return {
+                            x: parseFloat(match[1]),
+                            y: parseFloat(match[2])
+                        };
+                    }
+                }
+                
+                // Fallback to bounding client rect if no transform style is present yet
                 const rect = el.getBoundingClientRect();
                 if (rect.width === 0 || rect.height === 0) return null;
                 return {
@@ -1500,6 +1510,35 @@
                 if (startIn) line.setAttribute('marker-start', 'url(#arrow)');
                 if (endIn) line.setAttribute('marker-end', 'url(#arrow)');
                 overlay.appendChild(line);
+            }
+
+            // Position and display the HTML dimension badges at 2D midpoints
+            const labelL = document.getElementById('dim-badge-l');
+            const labelW = document.getElementById('dim-badge-w');
+            const labelH = document.getElementById('dim-badge-h');
+
+            if (p2) {
+                labelL.style.display = 'block';
+                labelL.style.left = `${(p1.x + p2.x) / 2}px`;
+                labelL.style.top = `${(p1.y + p2.y) / 2}px`;
+            } else {
+                labelL.style.display = 'none';
+            }
+
+            if (p3) {
+                labelW.style.display = 'block';
+                labelW.style.left = `${(p1.x + p3.x) / 2}px`;
+                labelW.style.top = `${(p1.y + p3.y) / 2}px`;
+            } else {
+                labelW.style.display = 'none';
+            }
+
+            if (p4) {
+                labelH.style.display = 'block';
+                labelH.style.left = `${(p1.x + p4.x) / 2}px`;
+                labelH.style.top = `${(p1.y + p4.y) / 2}px`;
+            } else {
+                labelH.style.display = 'none';
             }
 
             // Draw Length (p1 to p2), Width (p1 to p3), and Height (p1 to p4)
