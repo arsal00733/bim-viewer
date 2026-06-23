@@ -1238,6 +1238,41 @@
         // ═══════════════════════════════════════════════════════════════
         //  CAD SVG Dimension Lines Engine
         // ═══════════════════════════════════════════════════════════════
+        // Liang-Barsky parametric line clipping against rect [0, 0, w, h]
+        function clipLineToRect(x1, y1, x2, y2, w, h) {
+            let t0 = 0, t1 = 1;
+            const dx = x2 - x1;
+            const dy = y2 - y1;
+
+            function clipVal(p, q) {
+                if (p === 0) {
+                    if (q < 0) return false;
+                } else {
+                    const r = q / p;
+                    if (p < 0) {
+                        if (r > t1) return false;
+                        else if (r > t0) t0 = r;
+                    } else {
+                        if (r < t0) return false;
+                        else if (r < t1) t1 = r;
+                    }
+                }
+                return true;
+            }
+
+            if (!clipVal(-dx, x1)) return null;   // Left edge
+            if (!clipVal(dx, w - x1)) return null; // Right edge
+            if (!clipVal(-dy, y1)) return null;   // Top edge
+            if (!clipVal(dy, h - y1)) return null; // Bottom edge
+
+            return {
+                x1: x1 + t0 * dx,
+                y1: y1 + t0 * dy,
+                x2: x1 + t1 * dx,
+                y2: y1 + t1 * dy
+            };
+        }
+
         function updateDimensions() {
             if (!measurementModeActive || !activeComponentKey) {
                 document.getElementById('dimensionOverlay').style.display = 'none';
@@ -1259,6 +1294,8 @@
             `;
 
             const viewerRect = modelViewer.getBoundingClientRect();
+            const w = viewerRect.width;
+            const h = viewerRect.height;
             
             function getScreenPos(id) {
                 const el = document.getElementById(id);
@@ -1281,34 +1318,60 @@
             function drawCADLine(ptStart, ptEnd, labelText) {
                 if (!ptStart || !ptEnd) return;
 
-                // Dimension line
+                // Clip the segment to viewport bounds
+                const clipped = clipLineToRect(ptStart.x, ptStart.y, ptEnd.x, ptEnd.y, w, h);
+                if (!clipped) return; // Completely off-screen
+
+                // Check if original points are inside screen bounds to assign markers
+                const startIn = ptStart.x >= 0 && ptStart.x <= w && ptStart.y >= 0 && ptStart.y <= h;
+                const endIn = ptEnd.x >= 0 && ptEnd.x <= w && ptEnd.y >= 0 && ptEnd.y <= h;
+
+                // Dimension line segment
                 const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-                line.setAttribute('x1', ptStart.x);
-                line.setAttribute('y1', ptStart.y);
-                line.setAttribute('x2', ptEnd.x);
-                line.setAttribute('y2', ptEnd.y);
+                line.setAttribute('x1', clipped.x1);
+                line.setAttribute('y1', clipped.y1);
+                line.setAttribute('x2', clipped.x2);
+                line.setAttribute('y2', clipped.y2);
                 line.setAttribute('stroke', '#0078f5');
-                line.setAttribute('stroke-width', '2.5');
-                line.setAttribute('marker-start', 'url(#arrow)');
-                line.setAttribute('marker-end', 'url(#arrow)');
+                line.setAttribute('stroke-width', '2');
+                if (startIn) line.setAttribute('marker-start', 'url(#arrow)');
+                if (endIn) line.setAttribute('marker-end', 'url(#arrow)');
                 overlay.appendChild(line);
 
-                // Dimension text label with halo mask
+                // Dimension text label with dynamic background badge
                 const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                const mx = (ptStart.x + ptEnd.x) / 2;
-                const my = (ptStart.y + ptEnd.y) / 2;
+                const mx = (clipped.x1 + clipped.x2) / 2;
+                const my = (clipped.y1 + clipped.y2) / 2;
                 text.setAttribute('x', mx);
-                text.setAttribute('y', my - 6);
-                text.setAttribute('fill', '#005bc1');
-                text.setAttribute('font-size', '11px');
-                text.setAttribute('font-weight', '800');
+                text.setAttribute('y', my + 4); // vertically center
+                text.setAttribute('fill', '#0078f5');
+                text.setAttribute('font-size', '10px');
+                text.setAttribute('font-weight', 'bold');
+                text.setAttribute('font-family', 'monospace');
                 text.setAttribute('text-anchor', 'middle');
-                text.setAttribute('paint-order', 'stroke');
-                text.setAttribute('stroke', '#ffffff');
-                text.setAttribute('stroke-width', '4px');
-                text.setAttribute('stroke-linejoin', 'round');
                 text.textContent = labelText;
                 overlay.appendChild(text);
+
+                // Create white background badge behind text
+                const bbox = text.getBBox();
+                const padX = 6;
+                const padY = 3;
+                const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                rect.setAttribute('x', bbox.x - padX);
+                rect.setAttribute('y', bbox.y - padY);
+                rect.setAttribute('width', bbox.width + (padX * 2));
+                rect.setAttribute('height', bbox.height + (padY * 2));
+                rect.setAttribute('rx', '4');
+                rect.setAttribute('ry', '4');
+                rect.setAttribute('fill', '#0f172a'); // matching the dark HUD background
+                rect.setAttribute('stroke', '#0078f5');
+                rect.setAttribute('stroke-width', '1');
+                
+                // Set text color to white for contrast on dark background
+                text.setAttribute('fill', '#f8fafc');
+
+                // Insert rect before text
+                overlay.insertBefore(rect, text);
             }
 
             // Draw Length (p1 to p2), Width (p1 to p3), and Height (p1 to p4)
