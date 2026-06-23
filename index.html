@@ -311,45 +311,25 @@
             to { opacity: 0.5; }
         }
 
-        /* Presentation Vignette Overlay */
-        #vignetteOverlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 5;
-            opacity: 0;
-            transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-            background: rgba(10, 15, 28, 0.55);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            -webkit-mask-image: radial-gradient(ellipse 55% 60% at 50% 50%, transparent 30%, black 75%);
-            mask-image: radial-gradient(ellipse 55% 60% at 50% 50%, transparent 30%, black 75%);
-        }
-        #vignetteOverlay.active { opacity: 1; }
+        /* Presentation Vignette Overlay — disabled, kept for reference */
+        #vignetteOverlay { display: none; }
 
-        /* 2D Dimension Label Overlays */
+        /* CAD Dimension Label — positioned by JS */
         .dim-badge {
             position: absolute;
-            z-index: 100;
-            background: rgba(10, 18, 36, 0.90);
-            backdrop-filter: blur(6px);
-            -webkit-backdrop-filter: blur(6px);
-            border: 1.5px solid #0078f5;
-            color: #e0f0ff;
-            padding: 3px 8px;
-            border-radius: 5px;
+            z-index: 110;
+            background: rgba(15, 23, 42, 0.92);
+            border: 1px solid rgba(255,255,255,0.25);
+            color: #f1f5f9;
+            padding: 2px 7px;
+            border-radius: 4px;
             font-size: 11px;
             font-weight: 700;
             font-family: 'Courier New', monospace;
             white-space: nowrap;
-            box-shadow: 0 0 10px rgba(0, 120, 245, 0.5), 0 2px 8px rgba(0,0,0,0.5);
             pointer-events: none;
-            display: none; /* Hide by default */
+            display: none;
             transform: translate(-50%, -50%);
-            transition: opacity 0.2s ease;
         }
 
         /* Mobile Adjustments */
@@ -1180,7 +1160,7 @@
         // ══════════════════════════════════════════════════════════════
         //  Measurements / CAD-Style 3D Ruler Mode
         // ══════════════════════════════════════════════════════════════
-        let measurementModeActive = false;
+        let measurementModeActive = true; // Always on
         let activeComponentKey = null;
 
                 const db = {
@@ -1300,24 +1280,15 @@
             }
         };
 
-        window.toggleMeasurementMode = function() {
-            measurementModeActive = !measurementModeActive;
-            const toggleBtn = document.getElementById('measToggle');
-            if (measurementModeActive) {
-                toggleBtn.classList.add('active');
-                modelViewer.classList.add('measure-mode-active');
-            } else {
-                toggleBtn.classList.remove('active');
-                modelViewer.classList.remove('measure-mode-active');
-                deselectComponent();
-            }
-        };
+        // Ruler is always active — mark the button as permanently active
+        window.toggleMeasurementMode = function() { /* no-op, always on */ };
+        document.getElementById('measToggle').classList.add('active');
+        modelViewer.classList.add('measure-mode-active');
 
         window.deselectComponent = function() {
             activeComponentKey = null;
             document.getElementById('cadHud').style.display = 'none';
             document.getElementById('dimensionOverlay').style.display = 'none';
-            document.getElementById('vignetteOverlay').classList.remove('active');
             
             // Hide 2D dimension badges
             ['dim-badge-l', 'dim-badge-w', 'dim-badge-h'].forEach(id => {
@@ -1374,8 +1345,7 @@
                 document.getElementById('hudEst').textContent = 'DPR Estimate: ' + comp.est;
                 document.getElementById('cadHud').style.display = 'flex';
 
-                // Activate presentation vignette
-                document.getElementById('vignetteOverlay').classList.add('active');
+                // (Vignette disabled — no blur overlay)
 
                 // Ghost out all non-selected meshes completely (soft transparent outline)
                 modelViewer.model.materials.forEach(m => {
@@ -1393,49 +1363,15 @@
             }
         });
 
-        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+        // ══════════════════════════════════════════════════════════════
         //  CAD SVG Dimension Lines Engine
-        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-        // Liang-Barsky parametric line clipping against rect [0, 0, w, h]
-        function clipLineToRect(x1, y1, x2, y2, w, h) {
-            let t0 = 0, t1 = 1;
-            const dx = x2 - x1;
-            const dy = y2 - y1;
-
-            function clipVal(p, q) {
-                if (p === 0) {
-                    if (q < 0) return false;
-                } else {
-                    const r = q / p;
-                    if (p < 0) {
-                        if (r > t1) return false;
-                        else if (r > t0) t0 = r;
-                    } else {
-                        if (r < t0) return false;
-                        else if (r < t1) t1 = r;
-                    }
-                }
-                return true;
-            }
-
-            if (!clipVal(-dx, x1)) return null;   // Left edge
-            if (!clipVal(dx, w - x1)) return null; // Right edge
-            if (!clipVal(-dy, y1)) return null;   // Top edge
-            if (!clipVal(dy, h - y1)) return null; // Bottom edge
-
-            return {
-                x1: x1 + t0 * dx,
-                y1: y1 + t0 * dy,
-                x2: x1 + t1 * dx,
-                y2: y1 + t1 * dy
-            };
-        }
-
+        // ══════════════════════════════════════════════════════════════
         function updateDimensions() {
             if (!measurementModeActive || !activeComponentKey) {
                 document.getElementById('dimensionOverlay').style.display = 'none';
                 ['dim-badge-l', 'dim-badge-w', 'dim-badge-h'].forEach(id => {
-                    document.getElementById(id).style.display = 'none';
+                    const el = document.getElementById(id);
+                    if (el) el.style.display = 'none';
                 });
                 return;
             }
@@ -1444,110 +1380,83 @@
 
             const overlay = document.getElementById('dimensionOverlay');
             overlay.style.display = 'block';
-            
-            // Clear previous elements
             overlay.innerHTML = `
                 <defs>
-                    <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-                        <path d="M 0 1.5 L 10 5 L 0 8.5 z" fill="#0078f5" />
+                    <marker id="arr" viewBox="0 0 10 10" refX="5" refY="5"
+                        markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+                        <path d="M 0 2 L 10 5 L 0 8 z" fill="#60a5fa"/>
                     </marker>
-                </defs>
-            `;
+                </defs>`;
 
-            const viewerRect = modelViewer.getBoundingClientRect();
-            const w = viewerRect.width;
-            const h = viewerRect.height;
-            
+            const vr = modelViewer.getBoundingClientRect();
+            const W = vr.width, H = vr.height;
+
             function getScreenPos(id) {
                 const el = document.getElementById(id);
                 if (!el) return null;
-                
-                // Parse translation from transform style (works even when occluded/scaled to 0)
-                const transform = el.style.transform;
-                if (transform) {
-                    const match = transform.match(/translate3d\(([-0-9.]+)px,\s*([-0-9.]+)px/);
-                    if (match) {
-                        return {
-                            x: parseFloat(match[1]),
-                            y: parseFloat(match[2])
-                        };
-                    }
+                const t = el.style.transform;
+                if (t) {
+                    const m = t.match(/translate3d\(([-0-9.]+)px,\s*([-0-9.]+)px/);
+                    if (m) return { x: +m[1], y: +m[2] };
                 }
-                
-                // Fallback to bounding client rect if no transform style is present yet
-                const rect = el.getBoundingClientRect();
-                if (rect.width === 0 || rect.height === 0) return null;
-                return {
-                    x: rect.left - viewerRect.left + rect.width / 2,
-                    y: rect.top - viewerRect.top + rect.height / 2
-                };
+                const r = el.getBoundingClientRect();
+                if (!r.width && !r.height) return null;
+                return { x: r.left - vr.left + r.width / 2, y: r.top - vr.top + r.height / 2 };
             }
 
             const p1 = getScreenPos('hotspot-p1');
             const p2 = getScreenPos('hotspot-p2');
             const p3 = getScreenPos('hotspot-p3');
             const p4 = getScreenPos('hotspot-p4');
-
             if (!p1) return;
 
-            function drawCADLine(ptStart, ptEnd) {
-                if (!ptStart || !ptEnd) return;
+            const OFFSET = 44;
+            const XTICK  = 10;
 
-                // Clip the segment to viewport bounds
-                const clipped = clipLineToRect(ptStart.x, ptStart.y, ptEnd.x, ptEnd.y, w, h);
-                if (!clipped) return; // Completely off-screen
-
-                // Check if original points are inside screen bounds to assign markers
-                const startIn = ptStart.x >= 0 && ptStart.x <= w && ptStart.y >= 0 && ptStart.y <= h;
-                const endIn = ptEnd.x >= 0 && ptEnd.x <= w && ptEnd.y >= 0 && ptEnd.y <= h;
-
-                // Dimension line segment
-                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-                line.setAttribute('x1', clipped.x1);
-                line.setAttribute('y1', clipped.y1);
-                line.setAttribute('x2', clipped.x2);
-                line.setAttribute('y2', clipped.y2);
-                line.setAttribute('stroke', '#0078f5');
-                line.setAttribute('stroke-width', '2');
-                if (startIn) line.setAttribute('marker-start', 'url(#arrow)');
-                if (endIn) line.setAttribute('marker-end', 'url(#arrow)');
-                overlay.appendChild(line);
+            function svgEl(tag, attrs) {
+                const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+                for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
+                overlay.appendChild(el);
             }
 
-            // Position and display the HTML dimension badges at 2D midpoints
-            const labelL = document.getElementById('dim-badge-l');
-            const labelW = document.getElementById('dim-badge-w');
-            const labelH = document.getElementById('dim-badge-h');
+            function drawDim(ptA, ptB, badge) {
+                if (!ptA || !ptB) { badge.style.display = 'none'; return; }
+                const dx = ptB.x - ptA.x, dy = ptB.y - ptA.y;
+                const len = Math.hypot(dx, dy);
+                if (len < 3) { badge.style.display = 'none'; return; }
 
-            if (p2) {
-                labelL.style.display = 'block';
-                labelL.style.left = `${(p1.x + p2.x) / 2}px`;
-                labelL.style.top = `${(p1.y + p2.y) / 2}px`;
-            } else {
-                labelL.style.display = 'none';
+                const nx = -dy / len, ny = dx / len;
+                const cx = (ptA.x + ptB.x) / 2, cy = (ptA.y + ptB.y) / 2;
+                const sign = (nx * (cx - W / 2) + ny * (cy - H / 2)) >= 0 ? 1 : -1;
+
+                const ox = sign * nx * OFFSET, oy = sign * ny * OFFSET;
+                const ex = sign * nx * (OFFSET + XTICK), ey = sign * ny * (OFFSET + XTICK);
+
+                svgEl('line', { x1: ptA.x, y1: ptA.y, x2: ptA.x + ex, y2: ptA.y + ey,
+                    stroke: 'rgba(148,163,184,0.5)', 'stroke-width': '1', 'stroke-dasharray': '4 3' });
+                svgEl('line', { x1: ptB.x, y1: ptB.y, x2: ptB.x + ex, y2: ptB.y + ey,
+                    stroke: 'rgba(148,163,184,0.5)', 'stroke-width': '1', 'stroke-dasharray': '4 3' });
+
+                svgEl('line', {
+                    x1: ptA.x + ox, y1: ptA.y + oy, x2: ptB.x + ox, y2: ptB.y + oy,
+                    stroke: '#60a5fa', 'stroke-width': '1.5',
+                    'marker-start': 'url(#arr)', 'marker-end': 'url(#arr)'
+                });
+
+                badge.style.display = 'block';
+                badge.style.left = ((ptA.x + ptB.x) / 2 + ox) + 'px';
+                badge.style.top  = ((ptA.y + ptB.y) / 2 + oy) + 'px';
             }
 
-            if (p3) {
-                labelW.style.display = 'block';
-                labelW.style.left = `${(p1.x + p3.x) / 2}px`;
-                labelW.style.top = `${(p1.y + p3.y) / 2}px`;
-            } else {
-                labelW.style.display = 'none';
-            }
+            const lL = document.getElementById('dim-badge-l');
+            const lW = document.getElementById('dim-badge-w');
+            const lH = document.getElementById('dim-badge-h');
 
-            if (p4) {
-                labelH.style.display = 'block';
-                labelH.style.left = `${(p1.x + p4.x) / 2}px`;
-                labelH.style.top = `${(p1.y + p4.y) / 2}px`;
-            } else {
-                labelH.style.display = 'none';
-            }
-
-            // Draw Length (p1 to p2), Width (p1 to p3), and Height (p1 to p4)
-            if (p2) drawCADLine(p1, p2);
-            if (p3) drawCADLine(p1, p3);
-            if (p4) drawCADLine(p1, p4);
+            drawDim(p1, p2, lL);
+            drawDim(p1, p3, lW);
+            drawDim(p1, p4, lH);
         }
+
 
         // Run dimensions update on camera movement
         modelViewer.addEventListener('camera-change', updateDimensions);
