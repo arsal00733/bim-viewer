@@ -1335,6 +1335,8 @@
                     m.pbrMetallicRoughness.setBaseColorFactor([1, 1, 1, 1]);
                 });
             }
+        };
+
         modelViewer.addEventListener('click', (event) => {
             if (!measurementModeActive) return;
             const material = modelViewer.materialFromPoint(event.clientX, event.clientY);
