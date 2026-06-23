@@ -12,16 +12,16 @@ import trimesh
 import os
 
 MATERIALS = {
-    "concrete_a":  (152, 147, 139, 255),  # #98938B darker weathered concrete
-    "concrete_b":  (142, 137, 129, 255),  # slightly darker concrete layer
-    "pcc":         (107, 103,  97, 255),  # #6B6761 lean PCC
-    "footing":     (139, 134, 126, 255),  # #8B867E footings
-    "bedblock":    (176, 172, 164, 255),  # #B0ACA4 precast bed block
-    "deck":        (152, 149, 141, 255),  # #98958D deck slab
+    "concrete_a":  (135, 135, 130, 255),  # #878782 weathered industrial concrete
+    "concrete_b":  (125, 125, 120, 255),  # #7D7D78 slightly darker layer
+    "pcc":         ( 80,  80,  78, 255),  # #50504E lean PCC
+    "footing":     (100, 100,  95, 255),  # #64645F footings
+    "bedblock":    (135, 135, 130, 255),  # #878782 precast bed block
+    "deck":        (115, 115, 110, 255),  # #73736E deck slab
     "earth":       (170, 130, 100, 255),  # #AA8264 earth fill (keep)
-    "steel":       ( 77,  83,  89, 255),  # #4D5359 steel bearings
-    "asphalt":     ( 63,  65,  68, 255),  # #3F4144 asphalt road
-    "handrail":    (156, 156, 152, 255),  # #9C9C98 darker handrails
+    "steel":       ( 60,  65,  70, 255),  # #3C4146 steel bearings
+    "asphalt":     ( 45,  45,  48, 255),  # #2D2D30 asphalt road
+    "handrail":    (165, 165, 160, 255),  # #A5A5A0 handrails
     "misc":        ( 80,  80,  82, 200),  # dark grey misc
 }
 
