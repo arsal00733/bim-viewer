@@ -1254,6 +1254,7 @@
     <div class="stage-info" id="stageInfo">
         <div class="si-title" id="siTitle">Finished Structure</div>
         <div class="si-item" id="siSpec"></div>
+        <div class="si-item" id="siDims"></div>
         <div class="si-item" id="siQty"></div>
         <div><span class="highlight-badge" id="siBadge">Completed</span></div>
     </div>
@@ -1797,6 +1798,8 @@
             updateStageInfo();
             document.getElementById('stageInfo').style.display = 'block';
             document.getElementById('stageSlider').value = num;
+            const ms = document.getElementById('mobileStageSlider');
+            if (ms) { ms.max = stages.length; ms.value = num; }
             const s = getStage(num);
             document.getElementById('stageLabel').innerHTML = 'Stage ' + num + ' / ' + stages.length + ' <span class="sub">' + s.name + '</span>';
             // Flash feedback
@@ -1878,6 +1881,14 @@
             document.getElementById('siSpec').innerHTML = '<strong>Item:</strong> ' + s.item + '<br><strong>Spec:</strong> ' + s.spec;
             document.getElementById('siQty').innerHTML = '<strong>Quantity:</strong> ' + s.qty;
 
+            // Find dimensions from first component with data
+            let dimL = '—', dimB = '—', dimH = '—';
+            for (const key of s.comps) {
+                const c = db[key];
+                if (c && c.l && c.l !== '—') { dimL = c.l; dimB = c.b || '—'; dimH = c.h || '—'; break; }
+            }
+            document.getElementById('siDims').innerHTML = '<strong>Length:</strong> ' + dimL + '<br><strong>Width:</strong> ' + dimB + '<br><strong>Height:</strong> ' + dimH;
+
             if (currentStage < stages.length) {
                 document.getElementById('siBadge').textContent = 'In Progress — Stage ' + currentStage;
             } else {
@@ -1890,6 +1901,7 @@
             const ssItem = document.getElementById('ssItem');
             const ssSpec = document.getElementById('ssSpec');
             const ssQty = document.getElementById('ssQty');
+            const ssDims = document.getElementById('ssDims');
             const sbNum = document.getElementById('sbStageNum');
             const sbName = document.getElementById('sbStageName');
             const ms = document.getElementById('mobileStageSlider');
@@ -1898,9 +1910,10 @@
             if (ssItem) ssItem.textContent = s.item;
             if (ssSpec) ssSpec.textContent = s.spec;
             if (ssQty) ssQty.textContent = s.qty;
+            if (ssDims) ssDims.innerHTML = '<strong>Length:</strong> ' + dimL + ' | <strong>Width:</strong> ' + dimB + ' | <strong>Height:</strong> ' + dimH;
             if (sbNum) sbNum.textContent = 'Stage ' + currentStage + '/' + stages.length;
             if (sbName) sbName.textContent = s.name;
-            if (ms) ms.value = currentStage;
+            if (ms) { ms.max = stages.length; ms.value = currentStage; }
         }
 
         // Override deselectComponent to re-apply stage visibility after restoring colors
@@ -1941,6 +1954,7 @@
         <div class="ss-desc" id="ssDesc">
           <div class="ss-desc-row"><strong>Item:</strong> <span id="ssItem">—</span></div>
           <div class="ss-desc-row"><strong>Spec:</strong> <span id="ssSpec">—</span></div>
+          <div class="ss-desc-row"><span id="ssDims">—</span></div>
           <div class="ss-desc-row"><strong>Qty:</strong> <span id="ssQty">—</span></div>
         </div>
         <div class="ss-wbs">
@@ -2059,8 +2073,8 @@
       // Sync mobile slider max on load
       var ms = document.getElementById('mobileStageSlider');
       if (ms) {
-        ms.max = document.getElementById('stageSlider').max;
-        ms.value = document.getElementById('stageSlider').value;
+        // Max/value will be set by updateStageInfo when model loads
+        ms.value = 1;
       }
     })();
     </script>
