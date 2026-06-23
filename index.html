@@ -8,6 +8,16 @@
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
+    <!-- Firebase Import Map -->
+    <script type="importmap">
+    {
+        "imports": {
+            "firebase/app": "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js",
+            "firebase/analytics": "https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js"
+        }
+    }
+    </script>
+
     <!-- Model Viewer Component -->
     <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js"></script>
 
@@ -1070,6 +1080,28 @@
         </div>
     </div>
 
+    <!-- Firebase Initialization -->
+    <script type="module">
+        import { initializeApp } from "firebase/app";
+        import { getAnalytics } from "firebase/analytics";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyB-CzQXlYz7vL-S6FKoRayfQO826M1gtQQ",
+            authDomain: "bim-app-203fe.firebaseapp.com",
+            projectId: "bim-app-203fe",
+            storageBucket: "bim-app-203fe.firebasestorage.app",
+            messagingSenderId: "389703958317",
+            appId: "1:389703958317:web:9d4b132726d61663411da4",
+            measurementId: "G-MC7QRGG0DK"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app);
+
+        window.__firebaseApp = app;
+        window.__firebaseAnalytics = analytics;
+    </script>
+
     <script>
         const modelViewer = document.querySelector('model-viewer');
         const viewCube = document.getElementById('viewCube');
@@ -1489,7 +1521,9 @@
 
 
         // Run dimensions update on camera movement
-        modelViewer.addEventListener('camera-change', updateDimensions);
+        modelViewer.addEventListener('camera-change', () => {
+            if (measurementModeActive && activeComponentKey) updateDimensions();
+        });
 
         // Animation frame loop to ensure perfect synchronization during transitions
         function animLoop() {
