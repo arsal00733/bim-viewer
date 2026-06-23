@@ -1465,9 +1465,11 @@
         modelViewer.addEventListener('click', (event) => {
             if (!measurementModeActive) return;
             const material = modelViewer.materialFromPoint(event.clientX, event.clientY);
-            console.log('Click material:', material ? material.name : null);
-            if (material && db[material.name]) {
-                activeComponentKey = material.name;
+            const matName = material ? material.name : null;
+            console.log('Click material:', JSON.stringify(matName), 'In DB:', matName ? !!db[matName] : false);
+            if (material && matName && db[matName]) {
+                try {
+                activeComponentKey = matName;
                 const comp = db[activeComponentKey];
 
                 // Update hotspot positions in 3D space
@@ -1512,6 +1514,9 @@
 
                 // Force an early dimension draw after hotspots have repositioned
                 setTimeout(updateDimensions, 80);
+            } catch (e) {
+                console.error('Click handler error:', e);
+            }
             } else {
                 // If clicked empty space, reset selection
                 deselectComponent();
