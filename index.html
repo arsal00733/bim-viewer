@@ -1052,6 +1052,7 @@
             min-width: 160px;
             font-size: 13px;
             box-shadow: 0 4px 24px rgba(0,0,0,0.3);
+            display: none;
         }
         .stage-info .si-title { font-weight: 600; font-size: 14px; margin-bottom: 2px; }
         .stage-info .si-item { color: var(--text-muted); font-size: 12px; line-height: 1.6; }
@@ -1696,10 +1697,12 @@
         window.toggleStages = function() {
             const panel = document.getElementById('wbsPanel');
             const bar = document.getElementById('timelineBar');
+            const info = document.getElementById('stageInfo');
             const label = document.getElementById('menuStagesLabel');
             const isHidden = panel.style.display === 'none' || !panel.style.display;
             panel.style.display = isHidden ? 'block' : 'none';
             bar.style.display = isHidden ? 'flex' : 'none';
+            info.style.display = isHidden ? 'block' : 'none';
             label.textContent = isHidden ? 'Hide Stages' : 'Construction Stages';
             // Close menu after selecting
             document.getElementById('menuDropdown').classList.remove('open');
@@ -2106,6 +2109,7 @@
             renderWBS();
             updateStageVisibility();
             updateStageInfo();
+            document.getElementById('stageInfo').style.display = 'block';
             document.getElementById('stageSlider').value = num;
             const s = getStage(num);
             document.getElementById('stageLabel').innerHTML = 'Stage ' + num + ' / ' + stages.length + ' <span class="sub">' + s.name + '</span>';
