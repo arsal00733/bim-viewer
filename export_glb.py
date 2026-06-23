@@ -12,14 +12,14 @@ import trimesh
 import os
 
 MATERIALS = {
-    "concrete_a":  (200, 195, 188, 255),  # #C8C3BC warm grey walls/abutments
-    "concrete_b":  (188, 183, 176, 255),  # slightly darker layer
+    "concrete_a":  (188, 182, 174, 255),  # #BCB6AE warm concrete grey (not white)
+    "concrete_b":  (176, 170, 162, 255),  # slightly darker concrete layer
     "pcc":         (130, 127, 120, 255),  # lean PCC
-    "footing":     (175, 170, 162, 255),  # #AFAAA2 footings (darker than walls)
-    "bedblock":    (200, 195, 188, 255),  # precast bed block
-    "deck":        (185, 182, 176, 255),  # #B9B6B0 deck slab
-    "earth":       (170, 130, 100, 255),  # #AA8264 earth fill (keep)
-    "steel":       ( 95, 100, 105, 255),  # #5F6469 steel bearings
+    "footing":     (156, 150, 141, 255),  # #9C968D footings (darker for hierarchy)
+    "bedblock":    (192, 187, 180, 255),  # lighter precast bed block
+    "deck":        (178, 173, 165, 255),  # deck slab between walls and footings
+    "earth":       (170, 130, 100, 255),  # #AA8264 earth fill
+    "steel":       ( 74,  80,  86, 255),  # #4A5056 steel bearings
     "asphalt":     ( 70,  70,  72, 255),  # #464648 asphalt road
     "handrail":    (220, 220, 215, 255),  # #DCDCD7 bright handrails
     "misc":        ( 80,  80,  82, 200),  # dark grey misc
@@ -62,6 +62,36 @@ def make_cylinder(p1, p2, radius, sections=8):
     center = (p1 + p2) / 2.0
     c.apply_translation(center)
     return c
+
+def darken_creases(mesh, strength=0.25):
+    """Darken vertices at sharp edges/corners to approximate AO on box geometry."""
+    verts, faces = mesh.vertices, mesh.faces
+    if not hasattr(mesh.visual, 'vertex_colors') or len(mesh.visual.vertex_colors) == 0:
+        return mesh
+    vc = mesh.visual.vertex_colors.copy().astype(np.float32)
+    # compute face normals via cross product
+    e1 = verts[faces[:, 1]] - verts[faces[:, 0]]
+    e2 = verts[faces[:, 2]] - verts[faces[:, 0]]
+    fn = np.cross(e1, e2)
+    fn_norm = np.linalg.norm(fn, axis=1, keepdims=True)
+    fn_norm[fn_norm < 1e-10] = 1.0
+    fn = fn / fn_norm
+    vn = mesh.vertex_normals
+    adj = [[] for _ in range(len(verts))]
+    for i, f in enumerate(faces):
+        for v in f:
+            adj[v].append(i)
+    for vi in range(len(verts)):
+        afn = fn[adj[vi]]
+        if len(afn) < 2:
+            continue
+        dots = np.dot(afn, vn[vi])
+        min_dot = dots.min()
+        if min_dot < 0.92:
+            darken = min((0.92 - min_dot) / 0.92, 1.0) * strength
+            vc[vi] = vc[vi] * (1.0 - darken)
+    mesh.visual = trimesh.visual.ColorVisuals(mesh=mesh, vertex_colors=vc.astype(np.uint8))
+    return mesh
 
 def make_colored_box(x0, x1, y0, y1, z0, z1, rgba):
     box_mesh = make_box(x0, x1, y0, y1, z0, z1)
@@ -465,11 +495,12 @@ for meshes, name in groups:
     if valid:
         merged = trimesh.util.concatenate(valid)
         merged.apply_transform(z_to_y_up)
+        darken_creases(merged, strength=0.2)
         # PBR parameters per component type
         if any(kw in name for kw in ['Handrail']):
             rough, metal = 0.45, 0.7
         elif any(kw in name for kw in ['Steel', 'Bearings']):
-            rough, metal = 0.3, 0.85
+            rough, metal = 0.3, 0.7
         elif any(kw in name for kw in ['Asphalt', 'WC']):
             rough, metal = 1.0, 0.0
         elif any(kw in name for kw in ['Earth']):
