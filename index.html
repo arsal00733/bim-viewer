@@ -1067,6 +1067,64 @@
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
+
+        /* ═══════ Top-Right Menu ═══════ */
+        .menu-btn {
+            position: absolute;
+            top: 24px;
+            right: 24px;
+            z-index: 20;
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background: rgba(15,23,42,0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            color: var(--text-main);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+            pointer-events: auto;
+        }
+        .menu-btn:hover { background: rgba(255,255,255,0.12); }
+        .menu-dropdown {
+            position: absolute;
+            top: 72px;
+            right: 24px;
+            z-index: 20;
+            background: rgba(15,23,42,0.9);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 6px;
+            min-width: 180px;
+            display: none;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+            pointer-events: auto;
+        }
+        .menu-dropdown.open { display: block; }
+        .menu-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            color: var(--text-muted);
+            font-size: 14px;
+            transition: background 0.15s;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+        }
+        .menu-item:hover { background: rgba(255,255,255,0.06); color: var(--text-main); }
+        .menu-item.active { color: var(--accent); }
+        .menu-divider { height: 1px; background: var(--glass-border); margin: 4px 8px; }
     </style>
 </head>
 <body>
@@ -1123,6 +1181,31 @@
 
     <!-- Presentation Vignette Blur -->
     <div id="vignetteOverlay"></div>
+
+    <!-- Top-Right Menu -->
+    <div class="menu-btn" id="menuBtn" onclick="toggleMenu()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>
+        </svg>
+    </div>
+    <div class="menu-dropdown" id="menuDropdown">
+        <button class="menu-item" onclick="toggleStages()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+                <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+            </svg>
+            <span id="menuStagesLabel">Construction Stages</span>
+        </button>
+        <div class="menu-divider"></div>
+        <button class="menu-item" onclick="document.querySelector('model-viewer').activateAR()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 3h6l-3 3"/><path d="M21 3h-6l3 3"/>
+                <path d="M3 21h6l-3-3"/><path d="M21 21h-6l3-3"/>
+                <rect x="7" y="7" width="10" height="10" rx="2"/>
+            </svg>
+            AR View
+        </button>
+    </div>
 
     <!-- Revit-style 3D View Cube Container -->
     <div class="view-cube-container">
@@ -1238,40 +1321,6 @@
             <line x1="12" y1="16" x2="12" y2="12"></line>
             <line x1="12" y1="8" x2="12.01" y2="8"></line>
         </svg>
-    </div>
-
-    <!-- Measurements Toggle Button -->
-    <div class="measurements-toggle" id="measToggle" onclick="toggleMeasurementMode()">
-        <span class="toggle-dot"></span>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;">
-            <rect x="2" y="7" width="20" height="10" rx="2" ry="2"></rect>
-            <line x1="6" y1="7" x2="6" y2="12"></line>
-            <line x1="10" y1="7" x2="10" y2="10"></line>
-            <line x1="14" y1="7" x2="14" y2="12"></line>
-            <line x1="18" y1="7" x2="18" y2="10"></line>
-        </svg>
-        <span>Ruler / Measurements</span>
-    </div>
-
-    <!-- WBS Toggle Button -->
-    <div class="measurements-toggle" id="wbsToggle" onclick="toggleWBS()" style="left: auto; right: 24px; bottom: 74px;">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;">
-            <rect x="3" y="3" width="7" height="7" rx="1"></rect>
-            <rect x="14" y="3" width="7" height="7" rx="1"></rect>
-            <rect x="3" y="14" width="7" height="7" rx="1"></rect>
-            <rect x="14" y="14" width="7" height="7" rx="1"></rect>
-        </svg>
-        <span id="wbsToggleLabel">Stages</span>
-    </div>
-        <span class="toggle-dot"></span>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;">
-            <rect x="2" y="7" width="20" height="10" rx="2" ry="2"></rect>
-            <line x1="6" y1="7" x2="6" y2="12"></line>
-            <line x1="10" y1="7" x2="10" y2="10"></line>
-            <line x1="14" y1="7" x2="14" y2="12"></line>
-            <line x1="18" y1="7" x2="18" y2="10"></line>
-        </svg>
-        <span>Ruler / Measurements</span>
     </div>
 
     <!-- CAD HUD for Details -->
@@ -1636,15 +1685,31 @@
 
         // Ruler is always active — mark the button as permanently active
         window.toggleMeasurementMode = function() { /* no-op, always on */ };
-        window.toggleWBS = function() {
-            const p = document.getElementById('wbsPanel');
-            const visible = p.style.display !== 'none';
-            p.style.display = visible ? 'none' : 'block';
-            document.getElementById('wbsToggleLabel').textContent = visible ? 'Stages' : 'Close';
-            if (!visible && document.getElementById('wbsList').children.length === 0) {
+        window.toggleMenu = function() {
+            document.getElementById('menuDropdown').classList.toggle('open');
+        };
+        window.toggleStages = function() {
+            const panel = document.getElementById('wbsPanel');
+            const bar = document.getElementById('timelineBar');
+            const label = document.getElementById('menuStagesLabel');
+            const isHidden = panel.style.display === 'none' || !panel.style.display;
+            panel.style.display = isHidden ? 'block' : 'none';
+            bar.style.display = isHidden ? 'flex' : 'none';
+            label.textContent = isHidden ? 'Hide Stages' : 'Construction Stages';
+            // Close menu after selecting
+            document.getElementById('menuDropdown').classList.remove('open');
+            if (isHidden && document.getElementById('wbsList').children.length === 0) {
                 renderWBS();
             }
         };
+        // Close menu on click outside
+        document.addEventListener('click', (e) => {
+            const btn = document.getElementById('menuBtn');
+            const dd = document.getElementById('menuDropdown');
+            if (!btn.contains(e.target) && !dd.contains(e.target)) {
+                dd.classList.remove('open');
+            }
+        });
         document.getElementById('measToggle').classList.add('active');
         modelViewer.classList.add('measure-mode-active');
 
@@ -1976,23 +2041,33 @@
         //  4D BIM WBS Timeline Logic
         // ══════════════════════════════════════════════════════════
         const stages = [
-            { id:1,  name:'Site Preparation',       item:'11.1.1.1', spec:'Earthwork Excavation',                    qty:'71.820 m³ + 52.668 m³ rock',         comps:[] },
-            { id:2,  name:'PCC Levelling Course',   item:'11.4.1.1', spec:'PCC Grade M10 (1:3:6)',                   qty:'14.364 m³',                           comps:['PCC_Left','PCC_Right'] },
-            { id:3,  name:'Foundation Footings',    item:'11.4.5',   spec:'RCC Grade M25',                            qty:'78.400 m³',                           comps:['Footings_Left','Footings_Right'] },
-            { id:4,  name:'Foundation Reinforcement',item:'11.7',    spec:'HYSD Reinforcement',                       qty:'6.164 tonnes',                        comps:[] },
-            { id:5,  name:'Abutments & Wing Walls', item:'12.5.3',  spec:'RCC Grade M20',                            qty:'320.357 m³',                          comps:['Abutment_Left','Abutment_Right','WingWalls_Left','WingWalls_Right','Backwalls_Left','Backwalls_Right'] },
-            { id:6,  name:'Substructure Reinforcement',item:'12.7', spec:'TMT Fe415 Reinforcement',                  qty:'4.805 tonnes',                        comps:[] },
-            { id:7,  name:'Bed Blocks',             item:'13.1.3',  spec:'RCC Grade M25',                            qty:'4.200 m³',                            comps:['BedBlocks_Left','BedBlocks_Right'] },
-            { id:8,  name:'Bearings',               item:'—',       spec:'Structural Steel',                         qty:'As per drawing',                      comps:['Bearings_South','Bearings_North'] },
-            { id:9,  name:'Deck Slab Reinforcement',item:'13.2',    spec:'HYSD Bars',                                qty:'7.282 tonnes',                        comps:[] },
-            { id:10, name:'Deck Slab Concrete',     item:'13.1.3',  spec:'RCC Grade M30',                            qty:'54.834 m³',                           comps:['DeckSlab','AsphaltWC'] },
-            { id:11, name:'Handrails & Posts',      item:'13.1.3',  spec:'RCC Grade M25',                            qty:'7.020 m³',                            comps:['Handrails_Left','Handrails_Right'] },
-            { id:12, name:'Weep Holes / Drainage',  item:'OD162747',spec:'PVC Weep Holes',                           qty:'100 m',                               comps:['Drainage_South','Drainage_North','RCC_Pipe'] },
-            { id:13, name:'River Protection Works', item:'—',       spec:'RCC Grade M20',                            qty:'314.538 m³',                          comps:['ProtectionWalls_South','ProtectionWalls_North','GuardStones_South','GuardStones_North','RetainingWalls_Left_South','RetainingWalls_Left_North','RetainingWalls_Right_South','RetainingWalls_Right_North'] },
-            { id:14, name:'Approach Embankment',    item:'3.4',     spec:'Earthwork / Granular Fill',                qty:'691.762 m³',                          comps:['EarthFill_South','EarthFill_North','ApproachSlabs_South','ApproachSlabs_North'] },
-            { id:15, name:'Name Board & Finishing', item:'—',       spec:'Granite / Paint / Expansion Joints',       qty:'—',                                   comps:['NameBoard','ExpansionJoints_South','ExpansionJoints_North'] },
+            { id:1,  name:'Site Preparation',              item:'—',          spec:'Setting out / Bund / Dewatering / Excavation',              qty:'71.820 m³ earth + 52.668 m³ rock',           comps:[] },
+            { id:2,  name:'PCC Levelling Course',          item:'11.4.1.1',   spec:'PCC Grade M10 (1:3:6)',                                       qty:'14.364 m³',                                    comps:['PCC_Left','PCC_Right'] },
+            { id:3,  name:'Footing Reinforcement',         item:'11.7',       spec:'HYSD Reinforcement Cage',                                      qty:'6.164 tonnes',                                 comps:[] },
+            { id:4,  name:'Footing Concrete',              item:'11.4.5',     spec:'RCC Grade M25',                                                 qty:'78.400 m³',                                    comps:['Footings_Left','Footings_Right'] },
+            { id:5,  name:'Starter Bars',                  item:'—',          spec:'Vertical Dowels from Footing',                                  qty:'As per drawing',                               comps:[] },
+            { id:6,  name:'Abutment / Wing Wall Rebar',    item:'12.7',       spec:'TMT Fe415 Reinforcement Cage',                                  qty:'4.805 tonnes',                                 comps:[] },
+            { id:7,  name:'Weep Hole Pipes',               item:'OD162747',   spec:'PVC Weep Holes placed before concreting',                       qty:'100 m',                                        comps:['Drainage_South','Drainage_North'] },
+            { id:8,  name:'Abutment / Wing Wall Concrete', item:'12.5.3',     spec:'RCC Grade M20',                                                 qty:'320.357 m³',                                   comps:['Abutment_Left','Abutment_Right','WingWalls_Left','WingWalls_Right','Backwalls_Left','Backwalls_Right'] },
+            { id:9,  name:'Bed Block Reinforcement',       item:'13.1.3',     spec:'Bed Block Steel Cage',                                          qty:'As per drawing',                               comps:[] },
+            { id:10, name:'Bed Block Concrete',            item:'13.1.3',     spec:'RCC Grade M25',                                                 qty:'4.200 m³',                                     comps:['BedBlocks_Left','BedBlocks_Right'] },
+            { id:11, name:'Bearings Installation',         item:'—',          spec:'Elastomeric Bearings',                                          qty:'As per drawing',                               comps:['Bearings_South','Bearings_North'] },
+            { id:12, name:'Deck Slab Reinforcement',       item:'13.2',       spec:'HYSD Bars',                                                      qty:'7.282 tonnes',                                 comps:[] },
+            { id:13, name:'Handrail Post Reinforcement',   item:'—',          spec:'Post Steel cast monolithically with slab',                      qty:'As per drawing',                               comps:[] },
+            { id:14, name:'Deck Slab Concrete',            item:'13.1.3',     spec:'RCC Grade M30',                                                 qty:'54.834 m³',                                    comps:['DeckSlab'] },
+            { id:15, name:'Horizontal Handrails',          item:'—',          spec:'RCC Grade M25 Horizontal Members',                              qty:'7.020 m³',                                     comps:['Handrails_Left','Handrails_Right'] },
+            { id:16, name:'Approach Excavation',           item:'3.4',        spec:'Approach Area Earthwork',                                        qty:'691.762 m³',                                   comps:[] },
+            { id:17, name:'Retaining Wall Footings',       item:'—',          spec:'PCC + Footing Steel + Concrete',                                  qty:'As per drawing',                               comps:[] },
+            { id:18, name:'Retaining Wall Reinforcement',  item:'—',          spec:'Wall Reinforcement Cages',                                       qty:'As per drawing',                               comps:[] },
+            { id:19, name:'Retaining Wall Weep Holes',     item:'—',          spec:'PVC Pipes before concreting',                                    qty:'As per drawing',                               comps:[] },
+            { id:20, name:'Retaining Wall Concrete',       item:'—',          spec:'RCC Grade M20',                                                 qty:'314.538 m³',                                   comps:['RetainingWalls_Left_South','RetainingWalls_Left_North','RetainingWalls_Right_South','RetainingWalls_Right_North','ProtectionWalls_South','ProtectionWalls_North'] },
+            { id:21, name:'RCC Drainage Pipes',            item:'—',          spec:'900 mm RCC Pipes',                                              qty:'As per drawing',                               comps:['RCC_Pipe'] },
+            { id:22, name:'River Protection Works',        item:'—',          spec:'Toe Walls / Guard Stones',                                      qty:'As per drawing',                               comps:['GuardStones_South','GuardStones_North'] },
+            { id:23, name:'Embankment Filling',            item:'—',          spec:'Granular Fill + Approach Slabs',                                qty:'691.762 m³',                                   comps:['EarthFill_South','EarthFill_North','ApproachSlabs_South','ApproachSlabs_North'] },
+            { id:24, name:'Asphalt Wearing Course',        item:'—',          spec:'Bituminous Wearing Coat',                                       qty:'As per drawing',                               comps:['AsphaltWC'] },
+            { id:25, name:'Name Board & Finishing',        item:'—',          spec:'Granite Board / Paint / Expansion Joints',                      qty:'—',                                            comps:['NameBoard','ExpansionJoints_South','ExpansionJoints_North'] },
         ];
-        let currentStage = 15;
+        let currentStage = 25;
 
         // WBS: save orig baseColorFactor on load (for restore after highlight)
         modelViewer.addEventListener('load', () => {
@@ -2115,7 +2190,7 @@
     </script>
 
     <!-- WBS Timeline Bar -->
-    <div class="timeline-bar">
+    <div class="timeline-bar" id="timelineBar" style="display:none;">
         <button onclick="prevStage()">◀</button>
         <div class="timeline-slider-container">
             <input type="range" id="stageSlider" min="1" max="15" value="15" oninput="setStage(this.value)">
