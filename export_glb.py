@@ -12,22 +12,40 @@ import trimesh
 import os
 
 MATERIALS = {
-    "concrete_a":  (170, 163, 155, 255),  # #AAA39B medium-dark warm concrete grey
-    "concrete_b":  (160, 153, 145, 255),  # slightly darker concrete layer
-    "pcc":         (111, 107, 100, 255),  # #6F6B64 lean PCC
-    "footing":     (142, 138, 130, 255),  # #8E8A82 footings
+    "concrete_a":  (168, 162, 155, 255),  # #A8A29B medium-dark warm concrete grey
+    "concrete_b":  (158, 152, 145, 255),  # slightly darker concrete layer
+    "pcc":         (107, 103,  97, 255),  # #6B6761 lean PCC
+    "footing":     (139, 134, 126, 255),  # #8B867E footings
     "bedblock":    (176, 172, 164, 255),  # #B0ACA4 precast bed block
     "deck":        (152, 149, 141, 255),  # #98958D deck slab
     "earth":       (170, 130, 100, 255),  # #AA8264 earth fill (keep)
     "steel":       ( 77,  83,  89, 255),  # #4D5359 steel bearings
     "asphalt":     ( 63,  65,  68, 255),  # #3F4144 asphalt road
-    "handrail":    (184, 184, 181, 255),  # #B8B8B5 handrails
+    "handrail":    (189, 189, 186, 255),  # #BDBDBA handrails
     "misc":        ( 80,  80,  82, 200),  # dark grey misc
 }
 
 # ═══════════════════════════════════════════════════════════════
 #  Geometry helper — axis-aligned box as trimesh
 # ═══════════════════════════════════════════════════════════════
+def flat_shade(mesh):
+    """Split vertices so each face has unique vertices with face normals (hard edges)."""
+    verts, faces = mesh.vertices, mesh.faces
+    new_verts = verts[faces].reshape(-1, 3)
+    new_faces = np.arange(len(new_verts)).reshape(-1, 3)
+    v0, v1, v2 = verts[faces[:,0]], verts[faces[:,1]], verts[faces[:,2]]
+    fn = np.cross(v1 - v0, v2 - v0)
+    fn_norm = np.linalg.norm(fn, axis=1, keepdims=True)
+    fn_norm[fn_norm < 1e-10] = 1.0
+    fn = fn / fn_norm
+    new_normals = np.repeat(fn, 3, axis=0)
+    flat = trimesh.Trimesh(vertices=new_verts, faces=new_faces, vertex_normals=new_normals)
+    if hasattr(mesh.visual, 'vertex_colors') and len(mesh.visual.vertex_colors) > 0:
+        vc = mesh.visual.vertex_colors
+        new_vc = vc[faces].reshape(-1, 4)
+        flat.visual = trimesh.visual.ColorVisuals(mesh=flat, vertex_colors=new_vc)
+    return flat
+
 def make_box(x0, x1, y0, y1, z0, z1):
     """Create a trimesh box from min/max coords."""
     dx, dy, dz = abs(x1 - x0), abs(y1 - y0), abs(z1 - z0)
@@ -494,8 +512,8 @@ for meshes, name in groups:
     valid = [m for m in meshes if m is not None and len(m.faces) > 0]
     if valid:
         merged = trimesh.util.concatenate(valid)
+        merged = flat_shade(merged)
         merged.apply_transform(z_to_y_up)
-        darken_creases(merged, strength=0.2)
         # PBR parameters per component type
         if any(kw in name for kw in ['Handrail']):
             rough, metal = 0.45, 0.7
