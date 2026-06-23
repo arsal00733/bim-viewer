@@ -1003,6 +1003,98 @@
         .menu-item:hover { background: rgba(255,255,255,0.06); color: var(--text-main); }
         .menu-item.active { color: var(--accent); }
         .menu-divider { height: 1px; background: var(--glass-border); margin: 4px 8px; }
+
+        /* ═══════ Mobile Stage Bottom Sheet ═══════ */
+        @media (max-width: 768px) {
+            .stage-sheet {
+                position: fixed; bottom: 0; left: 0; right: 0;
+                z-index: 50;
+                background: rgba(15,23,42,0.92);
+                backdrop-filter: blur(16px);
+                -webkit-backdrop-filter: blur(16px);
+                border-radius: 16px 16px 0 0;
+                border-top: 1px solid var(--glass-border);
+                transition: height 0.35s cubic-bezier(0.16,1,0.3,1), opacity 0.25s ease;
+                overflow: hidden;
+                touch-action: pan-y;
+                will-change: height;
+                pointer-events: auto;
+            }
+            .stage-sheet[data-state="collapsed"] { height: 72px; }
+            .stage-sheet[data-state="half"] { height: 40vh; }
+            .stage-sheet[data-state="full"] { height: 85vh; }
+            .stage-sheet.faded { opacity: 0.35; transition: opacity 0.2s; }
+            .stage-sheet.fullscreen { display: none; }
+
+            .ss-handle {
+                height: 20px; display: flex; align-items: center; justify-content: center;
+                cursor: grab; touch-action: none;
+            }
+            .ss-handle-bar {
+                width: 36px; height: 4px; border-radius: 2px;
+                background: rgba(255,255,255,0.2);
+            }
+            .ss-bar {
+                display: flex; align-items: center; justify-content: space-between;
+                padding: 0 16px 8px; height: 44px;
+            }
+            .ss-bar-left { display: flex; flex-direction: column; gap: 2px; }
+            .ss-stage-num { font-size: 10px; color: var(--text-muted); letter-spacing: 0.5px; }
+            .ss-stage-name { font-size: 14px; font-weight: 600; color: var(--text-main); }
+            .ss-expand {
+                background: none; border: none; color: var(--text-muted);
+                cursor: pointer; font-size: 18px; padding: 4px 8px; line-height: 1;
+            }
+
+            .ss-body {
+                padding: 0 16px 16px; overflow-y: auto;
+                height: calc(100% - 64px);
+            }
+            .ss-controls {
+                display: flex; align-items: center; gap: 12px; margin-bottom: 12px;
+            }
+            .ss-controls input[type=range] {
+                flex: 1; height: 4px; -webkit-appearance: none; appearance: none;
+                background: rgba(255,255,255,0.15); border-radius: 2px; outline: none;
+            }
+            .ss-controls input[type=range]::-webkit-slider-thumb {
+                -webkit-appearance: none; width: 14px; height: 14px;
+                border-radius: 50%; background: var(--accent); cursor: pointer;
+                border: 2px solid rgba(255,255,255,0.3);
+            }
+            .ss-btn {
+                background: rgba(255,255,255,0.06); border: 1px solid var(--glass-border);
+                border-radius: 8px; color: var(--text-main);
+                width: 36px; height: 36px; cursor: pointer; font-size: 14px; flex-shrink: 0;
+            }
+            .ss-desc {
+                background: rgba(0,0,0,0.25); border-radius: 8px;
+                padding: 10px 12px; margin-bottom: 12px;
+                font-size: 12px; line-height: 1.6;
+            }
+            .ss-desc-row { color: var(--text-muted); }
+            .ss-desc-row strong { color: var(--text-main); }
+            .ss-wbs-header {
+                font-weight: 600; font-size: 11px; letter-spacing: 1.2px;
+                color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase;
+            }
+
+            .timeline-bar { display: none !important; }
+            .wbs-panel { display: none !important; }
+
+            .stage-badge {
+                position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+                background: rgba(15,23,42,0.85); backdrop-filter: blur(12px);
+                -webkit-backdrop-filter: blur(12px);
+                border: 1px solid var(--glass-border); border-radius: 10px;
+                padding: 6px 14px; z-index: 51;
+                display: none; flex-direction: column; align-items: center; gap: 1px;
+                cursor: pointer; pointer-events: auto;
+                font-size: 11px;
+            }
+            .stage-badge .sb-num { color: var(--text-muted); font-size: 9px; letter-spacing: 0.5px; }
+            .stage-badge .sb-name { color: var(--text-main); font-weight: 600; }
+        }
     </style>
 </head>
 <body>
@@ -1082,6 +1174,13 @@
                 <rect x="7" y="7" width="10" height="10" rx="2"/>
             </svg>
             AR View
+        </button>
+        <div class="menu-divider"></div>
+        <button class="menu-item" onclick="if(window.toggleFullscreen)window.toggleFullscreen()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/>
+            </svg>
+            <span id="menuFullLabel">Full Model</span>
         </button>
     </div>
 
@@ -1298,6 +1397,12 @@
             document.getElementById('menuDropdown').classList.toggle('open');
         };
         window.toggleStages = function() {
+            // On mobile, use bottom sheet instead
+            if (window.innerWidth <= 768 && window.setSheetState) {
+                window.setSheetState('full');
+                document.getElementById('menuDropdown').classList.remove('open');
+                return;
+            }
             const panel = document.getElementById('wbsPanel');
             const bar = document.getElementById('timelineBar');
             const info = document.getElementById('stageInfo');
@@ -1709,6 +1814,8 @@
             const list = document.getElementById('wbsList');
             if (!list) return;
             list.innerHTML = '';
+            const mList = document.getElementById('mobileWbsList');
+            if (mList) mList.innerHTML = '';
             stages.forEach(s => {
                 const div = document.createElement('div');
                 div.className = 'wbs-item';
@@ -1718,6 +1825,10 @@
                 div.innerHTML = '<span class="num">' + s.id + '</span>' + s.name;
                 div.onclick = () => setStage(s.id);
                 list.appendChild(div);
+                if (mList) {
+                    const mdiv = div.cloneNode(true);
+                    mList.appendChild(mdiv);
+                }
             });
         }
 
@@ -1772,6 +1883,24 @@
             } else {
                 document.getElementById('siBadge').textContent = 'Completed';
             }
+
+            // Sync mobile sheet
+            const ssNum = document.getElementById('ssStageNum');
+            const ssName = document.getElementById('ssStageName');
+            const ssItem = document.getElementById('ssItem');
+            const ssSpec = document.getElementById('ssSpec');
+            const ssQty = document.getElementById('ssQty');
+            const sbNum = document.getElementById('sbStageNum');
+            const sbName = document.getElementById('sbStageName');
+            const ms = document.getElementById('mobileStageSlider');
+            if (ssNum) ssNum.textContent = 'Stage ' + currentStage + ' / ' + stages.length;
+            if (ssName) ssName.textContent = s.name;
+            if (ssItem) ssItem.textContent = s.item;
+            if (ssSpec) ssSpec.textContent = s.spec;
+            if (ssQty) ssQty.textContent = s.qty;
+            if (sbNum) sbNum.textContent = 'Stage ' + currentStage + '/' + stages.length;
+            if (sbName) sbName.textContent = s.name;
+            if (ms) ms.value = currentStage;
         }
 
         // Override deselectComponent to re-apply stage visibility after restoring colors
@@ -1793,5 +1922,147 @@
         <div class="stage-label" id="stageLabel">Stage 15 / 15 <span class="sub">Complete</span></div>
     </div>
 
+    <!-- Mobile Stage Bottom Sheet -->
+    <div class="stage-sheet" id="stageSheet" data-state="collapsed">
+      <div class="ss-handle" id="ssHandle"><div class="ss-handle-bar"></div></div>
+      <div class="ss-bar" id="ssBar">
+        <div class="ss-bar-left">
+          <span class="ss-stage-num" id="ssStageNum">Stage 25 / 25</span>
+          <span class="ss-stage-name" id="ssStageName">Name Board & Finishing</span>
+        </div>
+        <button class="ss-expand" id="ssExpand" aria-label="Expand stages">▲</button>
+      </div>
+      <div class="ss-body" id="ssBody">
+        <div class="ss-controls">
+          <button class="ss-btn" onclick="window.prevStage()">◀</button>
+          <input type="range" id="mobileStageSlider" min="1" max="25" value="25" oninput="window.setStage(this.value)">
+          <button class="ss-btn" onclick="window.nextStage()">▶</button>
+        </div>
+        <div class="ss-desc" id="ssDesc">
+          <div class="ss-desc-row"><strong>Item:</strong> <span id="ssItem">—</span></div>
+          <div class="ss-desc-row"><strong>Spec:</strong> <span id="ssSpec">—</span></div>
+          <div class="ss-desc-row"><strong>Qty:</strong> <span id="ssQty">—</span></div>
+        </div>
+        <div class="ss-wbs">
+          <div class="ss-wbs-header">Construction Stages</div>
+          <div class="wbs-list" id="mobileWbsList"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Floating Stage Badge (fullscreen mode) -->
+    <div class="stage-badge" id="stageBadge" style="display:none" onclick="window.setSheetState('collapsed'); this.style.display='none'; document.getElementById('stageSheet').classList.remove('fullscreen');">
+      <span class="sb-num" id="sbStageNum">Stage 25</span>
+      <span class="sb-name" id="sbStageName">Name Board</span>
+    </div>
+
+    <script>
+    (function() {
+      if (window.innerWidth > 768) return;
+      var sheet = document.getElementById('stageSheet');
+      var body = document.getElementById('ssBody');
+      var badge = document.getElementById('stageBadge');
+      var startY = 0, currentY = 0, dragging = false;
+      var state = 'collapsed';
+      var COLLAPSED_H = 72;
+      var HALF_H = window.innerHeight * 0.4;
+      var FULL_H = window.innerHeight * 0.85;
+
+      function setState(s) {
+        state = s;
+        sheet.dataset.state = s;
+        sheet.style.height = '';
+        document.getElementById('ssExpand').textContent = s === 'collapsed' ? '▲' : '▼';
+        if (s === 'full' && typeof window.renderWBS === 'function') window.renderWBS();
+      }
+      window.setSheetState = setState;
+
+      function onStart(y) {
+        startY = y; currentY = y; dragging = false;
+      }
+      function onMove(y) {
+        if (startY === 0) return;
+        currentY = y;
+        var delta = startY - currentY;
+        if (Math.abs(delta) > 5) dragging = true;
+        if (!dragging) return;
+        // Dynamically resize
+        var baseH = state === 'collapsed' ? COLLAPSED_H : state === 'half' ? HALF_H : FULL_H;
+        var newH = Math.max(COLLAPSED_H, Math.min(FULL_H, baseH + delta));
+        sheet.style.height = newH + 'px';
+        sheet.dataset.state = '';
+      }
+      function onEnd() {
+        if (!dragging) { startY = 0; return; }
+        dragging = false; startY = 0;
+        var h = sheet.offsetHeight;
+        if (h < (COLLAPSED_H + HALF_H) / 2) setState('collapsed');
+        else if (h < (HALF_H + FULL_H) / 2) setState('half');
+        else setState('full');
+      }
+
+      // Touch events
+      var handle = document.getElementById('ssHandle');
+      handle.addEventListener('touchstart', function(e) { onStart(e.touches[0].clientY); }, {passive:true});
+      sheet.addEventListener('touchstart', function(e) {
+        if (e.target === handle || handle.contains(e.target)) return;
+        onStart(e.touches[0].clientY);
+      }, {passive:true});
+      sheet.addEventListener('touchmove', function(e) {
+        if (startY === 0) return;
+        onMove(e.touches[0].clientY);
+        if (dragging) e.preventDefault();
+      }, {passive:false});
+      sheet.addEventListener('touchend', function() { onEnd(); }, {passive:true});
+      sheet.addEventListener('touchcancel', function() { onEnd(); }, {passive:true});
+
+      // Mouse drag for desktop testing
+      handle.addEventListener('mousedown', function(e) { onStart(e.clientY); });
+      document.addEventListener('mousemove', function(e) { if (startY) onMove(e.clientY); });
+      document.addEventListener('mouseup', function() { if (startY) onEnd(); });
+
+      // Expand button
+      document.getElementById('ssExpand').addEventListener('click', function(e) {
+        e.stopPropagation();
+        if (state === 'collapsed') setState('half');
+        else if (state === 'half') setState('full');
+        else setState('collapsed');
+      });
+
+      // Auto-fade on model interaction
+      var mv = document.querySelector('model-viewer');
+      mv.addEventListener('pointerdown', function() { sheet.classList.add('faded'); });
+      mv.addEventListener('pointerup', function() { sheet.classList.remove('faded'); });
+      mv.addEventListener('pointercancel', function() { sheet.classList.remove('faded'); });
+
+      // Tap outside to collapse
+      document.addEventListener('click', function(e) {
+        if (!sheet.contains(e.target) && state !== 'collapsed') setState('collapsed');
+      });
+
+      // Back button
+      history.pushState(null, '');
+      window.addEventListener('popstate', function() {
+        if (state !== 'collapsed') {
+          setState('collapsed');
+          history.pushState(null, '');
+        }
+      });
+
+      // Full-screen toggle via menu
+      window.toggleFullscreen = function() {
+        var isFS = sheet.classList.toggle('fullscreen');
+        sheet.style.display = isFS ? 'none' : '';
+        badge.style.display = isFS ? 'flex' : 'none';
+      };
+
+      // Sync mobile slider max on load
+      var ms = document.getElementById('mobileStageSlider');
+      if (ms) {
+        ms.max = document.getElementById('stageSlider').max;
+        ms.value = document.getElementById('stageSlider').value;
+      }
+    })();
+    </script>
+
 </body>
-</html>
