@@ -432,16 +432,28 @@
             color: #f8fafc;
         }
 
+        #cadHud .hud-dims {
+            background: rgba(96, 165, 250, 0.08);
+            border: 1px solid rgba(96, 165, 250, 0.2);
+            border-radius: 6px;
+            padding: 6px 8px;
+            margin-bottom: 2px;
+        }
+        #cadHud .hud-dims .hud-row span:first-child {
+            color: #60a5fa;
+        }
+        #cadHud .hud-dims .hud-row span:last-child {
+            color: #e2e8f0;
+            font-weight: 700;
+        }
         #cadHud .hud-row {
             display: flex;
             justify-content: space-between;
         }
-
         #cadHud .hud-row span:first-child {
             color: #94a3b8;
             font-weight: 600;
         }
-
         #cadHud .hud-row span:last-child {
             color: #f8fafc;
             font-weight: 700;
@@ -1074,6 +1086,11 @@
                 </svg>
             </div>
         </div>
+        <div class="hud-dims">
+            <div class="hud-row"><span>Length:</span><span id="hudL">-</span></div>
+            <div class="hud-row"><span>Width:</span><span id="hudW">-</span></div>
+            <div class="hud-row"><span>Height:</span><span id="hudH">-</span></div>
+        </div>
         <div class="hud-row">
             <span>Material:</span>
             <span id="hudMat">-</span>
@@ -1356,29 +1373,26 @@
                 document.getElementById('hotspot-p3').setAttribute('data-position', comp.p3.join(' '));
                 document.getElementById('hotspot-p4').setAttribute('data-position', comp.p4.join(' '));
 
-                // Update 2D dimension badge texts
-                const dimL = document.getElementById('dim-badge-l');
-                const dimW = document.getElementById('dim-badge-w');
-                const dimH = document.getElementById('dim-badge-h');
-                dimL.textContent = 'L: ' + comp.l;
-                dimW.textContent = 'W: ' + comp.b;
-                dimH.textContent = 'H: ' + comp.h;
+                // Update HUD dimensions and details
+                document.getElementById('hudName').textContent = comp.n;
+                document.getElementById('hudL').textContent = comp.l;
+                document.getElementById('hudW').textContent = comp.b;
+                document.getElementById('hudH').textContent = comp.h;
+                document.getElementById('hudMat').textContent = comp.mat;
+                document.getElementById('hudEst').textContent = 'DPR Estimate: ' + comp.est;
+                document.getElementById('cadHud').style.display = 'flex';
 
-                // Show 2D dimension badges
+                // Show only the LENGTH dimension badge in the 3D view
+                const dimL = document.getElementById('dim-badge-l');
+                dimL.textContent = comp.l;
                 dimL.style.display = 'block';
-                dimW.style.display = 'block';
-                dimH.style.display = 'block';
+                document.getElementById('dim-badge-w').style.display = 'none';
+                document.getElementById('dim-badge-h').style.display = 'none';
 
                 // Smooth camera transition: Target the component center and zoom radius
                 const currentOrbit = modelViewer.getCameraOrbit();
                 modelViewer.cameraTarget = comp.target;
                 modelViewer.cameraOrbit = `${currentOrbit.theta}rad ${currentOrbit.phi}rad ${comp.r}`;
-
-                // Update HUD details
-                document.getElementById('hudName').textContent = comp.n;
-                document.getElementById('hudMat').textContent = comp.mat;
-                document.getElementById('hudEst').textContent = 'DPR Estimate: ' + comp.est;
-                document.getElementById('cadHud').style.display = 'flex';
 
                 // (Vignette disabled — no blur overlay)
 
@@ -1518,8 +1532,6 @@
             const targetParts = targetStr.split(' ').map(s => parseFloat(s));
             const tx = targetParts[0], ty = targetParts[1], tz = targetParts[2];
 
-            console.log('cam target:', tx, ty, tz, 'orbit theta:', orbit.theta, 'phi:', orbit.phi, 'radius:', orbit.radius, 'scale:', scale);
-
             const theta = orbit.theta;
             const phi = orbit.phi;
             const radius = orbit.radius;
@@ -1606,16 +1618,10 @@
             // Project the 4 anchor points directly from 3D world → 2D screen
             const p1 = project3DTo2D(comp.p1[0], comp.p1[1], comp.p1[2]);
             const p2 = project3DTo2D(comp.p2[0], comp.p2[1], comp.p2[2]);
-            const p3 = project3DTo2D(comp.p3[0], comp.p3[1], comp.p3[2]);
-            const p4 = project3DTo2D(comp.p4[0], comp.p4[1], comp.p4[2]);
 
-            console.log('p1 screen:', p1, 'world:', comp.p1[0], comp.p1[1], comp.p1[2]);
+            if (!p1 || !p2) return;
 
-            if (!p1 || !p2 || !p3 || !p4) return;
-
-            const spread = Math.hypot(p2.x - p1.x, p2.y - p1.y)
-                         + Math.hypot(p3.x - p1.x, p3.y - p1.y)
-                         + Math.hypot(p4.x - p1.x, p4.y - p1.y);
+            const spread = Math.hypot(p2.x - p1.x, p2.y - p1.y);
             if (spread < 5) return;
 
             overlay.style.display = 'block';
@@ -1627,12 +1633,8 @@
             initSVGDefs(overlay);
 
             const lL = document.getElementById('dim-badge-l');
-            const lW = document.getElementById('dim-badge-w');
-            const lH = document.getElementById('dim-badge-h');
 
             drawDimLine(overlay, p1, p2, lL, W, H);
-            drawDimLine(overlay, p1, p3, lW, W, H);
-            drawDimLine(overlay, p1, p4, lH, W, H);
         }
 
         modelViewer.addEventListener('camera-change', () => {
