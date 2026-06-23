@@ -1264,23 +1264,41 @@
                 target: '0.3m 0.17m -1.1m', r: '20m',
                 p1: [9.0, 2.74, -15.0], p2: [9.0, 2.74, -53.0], p3: [10.6, 2.74, -15.0], p4: [9.0, 6.74, -15.0]
             },
-            'Footings': {
-                n: 'Footings', l: '7.30 m (Abutment) / 5.00 m (Wing)', b: '2.80 m', h: '1.00 m', mat: 'M25 RCC',
-                est: 'Abutment footings: 2 x 7.30 x 2.80 x 1.00 = 40.88 m³',
-                target: '0m -0.03m 0.06m', r: '10m',
-                p1: [-3.8, -1.0, -1.65], p2: [3.8, -1.0, -1.65], p3: [-3.8, -1.0, 4.15], p4: [-3.8, 0, -1.65]
+            'PCC_Left': {
+                n: 'PCC Bed (Left Abutment)', l: '6.30 m', b: '7.60 m', h: '0.15 m', mat: 'M15 Concrete (1:4:8)',
+                est: 'PCC layer below left abutment and wing wall footings',
+                target: '0m -0.06m 0.12m', r: '10m',
+                p1: [0, -1.075, 4.4], p2: [0, -1.075, -1.9], p3: [7.3, -1.075, 4.4], p4: [0, -1.0, 4.4]
             },
-            'PCC': {
-                n: 'PCC Foundation Bed', l: '7.60 m (Abutment) / 5.30 m (Wing)', b: '6.30 m / 3.10 m', h: '0.15 m', mat: 'M15 Concrete (1:4:8)',
-                est: 'PCC bed layer below all structural foundations',
-                target: '0m -0.05m 0.06m', r: '10m',
-                p1: [-3.95, -1.15, -1.8], p2: [3.95, -1.15, -1.8], p3: [-3.95, -1.15, 4.5], p4: [-3.95, -1.0, -1.8]
+            'PCC_Right': {
+                n: 'PCC Bed (Right Abutment)', l: '6.30 m', b: '7.60 m', h: '0.15 m', mat: 'M15 Concrete (1:4:8)',
+                est: 'PCC layer below right abutment and wing wall footings',
+                target: '0m -0.06m -0.6m', r: '10m',
+                p1: [0, -1.075, -8.1], p2: [0, -1.075, -14.4], p3: [7.3, -1.075, -8.1], p4: [0, -1.0, -8.1]
             },
-            'BedBlocks': {
-                n: 'Bed Blocks', l: '7.00 m', b: '1.00 m', h: '0.30 m', mat: 'M25 Concrete',
-                est: '2 x 7.00 x 1.00 x 0.30 = 4.20 m³',
+            'Footings_Left': {
+                n: 'Footings (Left Abutment)', l: '7.30 m (Abutment) / 5.00 m (Wing)', b: '2.80 m', h: '1.00 m', mat: 'M25 RCC',
+                est: 'Left abutment: 7.30 x 2.80 x 1.00 = 20.44 m³, Wing footings included',
+                target: '0m -0.03m 0.15m', r: '10m',
+                p1: [3.5, -0.5, 5.15], p2: [3.5, -0.5, -0.15], p3: [7.75, -0.5, 5.15], p4: [3.5, 0, 5.15]
+            },
+            'Footings_Right': {
+                n: 'Footings (Right Abutment)', l: '7.30 m (Abutment) / 5.00 m (Wing)', b: '2.80 m', h: '1.00 m', mat: 'M25 RCC',
+                est: 'Right abutment: 7.30 x 2.80 x 1.00 = 20.44 m³, Wing footings included',
+                target: '0m -0.03m -0.5m', r: '10m',
+                p1: [3.5, -0.5, -9.85], p2: [3.5, -0.5, -15.15], p3: [7.75, -0.5, -9.85], p4: [3.5, 0, -9.85]
+            },
+            'BedBlocks_Left': {
+                n: 'Bed Block (Left Abutment)', l: '7.00 m', b: '1.00 m', h: '0.30 m', mat: 'M25 Concrete',
+                est: 'Bed block at left abutment: 7.00 x 1.00 x 0.30 = 2.10 m³',
                 target: '0m 0.29m 0.03m', r: '10m',
-                p1: [-3.5, 5.7, -0.1], p2: [3.5, 5.7, -0.1], p3: [-3.5, 5.7, 1.1], p4: [-3.5, 6.0, -0.1]
+                p1: [0, 5.85, 1.0], p2: [7.0, 5.85, 1.0], p3: [0, 5.85, 0], p4: [0, 6.0, 1.0]
+            },
+            'BedBlocks_Right': {
+                n: 'Bed Block (Right Abutment)', l: '7.00 m', b: '1.00 m', h: '0.30 m', mat: 'M25 Concrete',
+                est: 'Bed block at right abutment: 7.00 x 1.00 x 0.30 = 2.10 m³',
+                target: '0m 0.29m -0.45m', r: '10m',
+                p1: [0, 5.85, -10.0], p2: [7.0, 5.85, -10.0], p3: [0, 5.85, -11.0], p4: [0, 6.0, -10.0]
             },
             'DeckSlab': {
                 n: 'Bridge Deck Slab', l: '11.40 m (Total Span)', b: '7.00 m (Overall Width)', h: '0.74 m', mat: 'M30 RCC',
@@ -1294,23 +1312,41 @@
                 target: '0m 0.34m -0.25m', r: '15m',
                 p1: [-3.1, 6.81, 0.7], p2: [-3.1, 6.81, -10.7], p3: [2.9, 6.81, 0.7], p4: [-3.1, 6.74, 0.7]
             },
-            'Backwalls': {
-                n: 'Backwalls / Dirt Walls', l: '7.00 m', b: '0.40 m', h: '1.20 m', mat: 'M25 Concrete',
-                est: '2 x 7.00 x 0.40 x 1.20 = 6.72 m³ behind deck expansion joints',
+            'Backwalls_Left': {
+                n: 'Backwall / Dirt Wall (Left Abutment)', l: '7.00 m', b: '0.40 m', h: '1.20 m', mat: 'M25 Concrete',
+                est: 'Backwall at left abutment: 7.00 x 0.40 x 1.20 = 3.36 m³',
                 target: '0m 0.32m 0.04m', r: '10m',
-                p1: [-3.6, 6.74, 0.85], p2: [3.6, 6.74, 0.85], p3: [-3.6, 6.74, 1.25], p4: [-3.6, 6.0, 0.85]
+                p1: [0, 6.25, 1.0], p2: [7.0, 6.25, 1.0], p3: [0, 6.25, 0.74], p4: [0, 6.79, 1.0]
             },
-            'ApproachSlabs': {
-                n: 'Approach Slabs', l: '3.50 m', b: '7.00 m', h: '0.20 m', mat: 'M25 Concrete',
-                est: '2 x 3.50 x 7.00 x 0.20 = 9.80 m³ slab transitions',
-                target: '0m 0.33m 0.13m', r: '12m',
-                p1: [-3.6, 6.74, 0.74], p2: [3.6, 6.74, 0.74], p3: [-3.6, 6.74, 4.24], p4: [-3.6, 6.54, 0.74]
+            'Backwalls_Right': {
+                n: 'Backwall / Dirt Wall (Right Abutment)', l: '7.00 m', b: '0.40 m', h: '1.20 m', mat: 'M25 Concrete',
+                est: 'Backwall at right abutment: 7.00 x 0.40 x 1.20 = 3.36 m³',
+                target: '0m 0.32m -0.5m', r: '10m',
+                p1: [0, 6.25, -11.44], p2: [7.0, 6.25, -11.44], p3: [0, 6.25, -12.5], p4: [0, 6.79, -11.44]
             },
-            'Handrails': {
-                n: 'Handrails & Posts', l: '11.40 m (Dual side)', b: '0.20 m Posts / 0.10 m Rails', h: '1.00 m Post', mat: 'Precast M25 Concrete',
-                est: '15 posts per side with horizontal concrete pipes',
-                target: '-0.18m 0.36m -0.25m', r: '12m',
-                p1: [-3.6, 6.74, 0.7], p2: [-3.6, 6.74, -10.7], p3: [-3.4, 6.74, 0.7], p4: [-3.6, 7.74, 0.7]
+            'ApproachSlabs_South': {
+                n: 'Approach Slab (South End)', l: '3.50 m', b: '7.00 m', h: '0.20 m', mat: 'M25 Concrete',
+                est: 'Southern approach slab: 3.50 x 7.00 x 0.20 = 4.90 m³',
+                target: '0m 0.34m 0.15m', r: '12m',
+                p1: [0, 6.69, 4.24], p2: [7.0, 6.69, 4.24], p3: [0, 6.69, 0.74], p4: [0, 6.79, 4.24]
+            },
+            'ApproachSlabs_North': {
+                n: 'Approach Slab (North End)', l: '3.50 m', b: '7.00 m', h: '0.20 m', mat: 'M25 Concrete',
+                est: 'Northern approach slab: 3.50 x 7.00 x 0.20 = 4.90 m³',
+                target: '0m 0.34m -0.55m', r: '12m',
+                p1: [0, 6.69, -11.44], p2: [7.0, 6.69, -11.44], p3: [0, 6.69, -15.44], p4: [0, 6.79, -11.44]
+            },
+            'Handrails_Left': {
+                n: 'Handrails (Left Side of Road)', l: '11.40 m', b: '0.20 m Posts / 0.10 m Rails', h: '1.00 m Post', mat: 'Precast M25 Concrete',
+                est: '15 posts + horizontal rails on the left side of the deck',
+                target: '-0.2m 0.36m -0.25m', r: '12m',
+                p1: [0, 7.3, 0.4], p2: [0, 7.3, -10.4], p3: [0.2, 7.3, 0.4], p4: [0, 7.79, 0.4]
+            },
+            'Handrails_Right': {
+                n: 'Handrails (Right Side of Road)', l: '11.40 m', b: '0.20 m Posts / 0.10 m Rails', h: '1.00 m Post', mat: 'Precast M25 Concrete',
+                est: '15 posts + horizontal rails on the right side of the deck',
+                target: '0.38m 0.36m -0.25m', r: '12m',
+                p1: [6.8, 7.3, 0.4], p2: [6.8, 7.3, -10.4], p3: [7.0, 7.3, 0.4], p4: [6.8, 7.79, 0.4]
             },
             'RCC_Pipe': {
                 n: 'RCC Humepipe Culvert', l: '10.00 m', b: '0.90 m Outer Dia', h: '0.075 m (Wall)', mat: 'RCC NP3 Pipe',
@@ -1318,29 +1354,83 @@
                 target: '0m -0.13m -0.25m', r: '15m',
                 p1: [-5.0, -2.5, -5.0], p2: [5.0, -2.5, -5.0], p3: [-5.0, -2.5, -5.9], p4: [-5.0, -1.6, -5.0]
             },
-            'ProtectionWalls': {
-                n: 'Protection Walls / Toe Walls', l: '10.00 m', b: '1.00 m (Base) / 0.40 m (Top)', h: '2.50 m', mat: 'M20 plum concrete',
-                est: 'Toe walls to protect embankment fill from river wash',
-                target: '-0.25m -0.01m 0m', r: '18m',
-                p1: [-5.0, -1.15, 1.05], p2: [5.0, -1.15, 1.05], p3: [-5.0, -1.15, -0.15], p4: [-5.0, 1.35, 1.05]
+            'Bearings_South': {
+                n: 'Bearings (South Abutment)', l: '0.30 m (3 nos.)', b: '0.30 m', h: '0.05 m (50 mm)', mat: 'Elastomeric Neoprene',
+                est: '3 bearings at south abutment under deck girder positions',
+                target: '0.1m 0.3m 0.02m', r: '8m',
+                p1: [1.5, 6.025, 0.35], p2: [5.5, 6.025, 0.35], p3: [1.5, 6.025, 0.05], p4: [1.5, 6.05, 0.35]
             },
-            'GuardStones': {
-                n: 'Guard Stones', l: '0.20 m', b: '0.20 m', h: '1.00 m', mat: 'M25 Concrete',
-                est: '56 precast guard stones along retaining wall copings',
-                target: '-0.2m 0.36m 0.5m', r: '12m',
-                p1: [-3.9, 6.74, 10.0], p2: [-3.7, 6.74, 10.0], p3: [-3.9, 6.74, 9.8], p4: [-3.9, 7.74, 10.0]
+            'Bearings_North': {
+                n: 'Bearings (North Abutment)', l: '0.30 m (3 nos.)', b: '0.30 m', h: '0.05 m (50 mm)', mat: 'Elastomeric Neoprene',
+                est: '3 bearings at north abutment under deck girder positions',
+                target: '0.1m 0.3m -0.46m', r: '8m',
+                p1: [1.5, 6.025, -10.35], p2: [5.5, 6.025, -10.35], p3: [1.5, 6.025, -10.65], p4: [1.5, 6.05, -10.35]
             },
-            'Bearings': {
-                n: 'Bearings', l: '0.30 m', b: '0.30 m', h: '0.05 m (50 mm)', mat: 'Elastomeric Neoprene',
-                est: '6 bearings total (3 per side) resting under deck girder positions',
-                target: '0.08m 0.3m 0.02m', r: '8m',
-                p1: [1.35, 6.0, 0.5], p2: [1.65, 6.0, 0.5], p3: [1.35, 6.0, 0.2], p4: [1.35, 6.05, 0.5]
+            'ProtectionWalls_South': {
+                n: 'Toe / Protection Walls (South End)', l: '10.00 m', b: '1.00 m (Base) / 0.40 m (Top)', h: '2.50 m', mat: 'M20 plum concrete',
+                est: 'Toe walls at south end protecting embankment from river wash',
+                target: '0.1m -0.01m 0.05m', r: '18m',
+                p1: [-5.6, 0.1, 1.05], p2: [12.6, 0.1, 1.05], p3: [-5.6, 0.1, -0.15], p4: [-5.6, 1.35, 1.05]
             },
-            'EarthFill': {
-                n: 'Approach Road Earth Fill', l: '72.00 m (Total length)', b: '7.00 m', h: '6.74 m max', mat: 'Selected cohesive soil',
-                est: 'Earth fill compacted in 20cm layers behind bridge structures',
-                target: '0m 0.17m 0.5m', r: '25m',
-                p1: [-3.5, 0, 10.0], p2: [3.5, 0, 10.0], p3: [-3.5, 0, 5.0], p4: [-3.5, 6.74, 10.0]
+            'ProtectionWalls_North': {
+                n: 'Toe / Protection Walls (North End)', l: '10.00 m', b: '1.00 m (Base) / 0.40 m (Top)', h: '2.50 m', mat: 'M20 plum concrete',
+                est: 'Toe walls at north end protecting embankment from river wash',
+                target: '0.1m -0.01m -0.45m', r: '18m',
+                p1: [-5.6, 0.1, -9], p2: [12.6, 0.1, -9], p3: [-5.6, 0.1, -10.15], p4: [-5.6, 1.35, -9]
+            },
+            'EarthFill_South': {
+                n: 'Earth Fill (South Approach)', l: '16.50 m', b: '7.00 m', h: '6.74 m max', mat: 'Selected cohesive soil',
+                est: 'Earth fill from Ch. -19m to -2.5m compacted in 20cm layers',
+                target: '0m 0.17m 0.45m', r: '18m',
+                p1: [0, 3.37, 19.0], p2: [0, 3.37, 2.5], p3: [7.0, 3.37, 19.0], p4: [0, 6.74, 19.0]
+            },
+            'EarthFill_North': {
+                n: 'Earth Fill (North Approach)', l: '40.50 m', b: '7.00 m', h: '6.74 m max', mat: 'Selected cohesive soil',
+                est: 'Earth fill from Ch. 12.5m to 53m compacted in 20cm layers',
+                target: '0m 0.17m -1.2m', r: '25m',
+                p1: [0, 3.37, -12.5], p2: [0, 3.37, -53.0], p3: [7.0, 3.37, -12.5], p4: [0, 6.74, -12.5]
+            },
+            'GuardStones_South': {
+                n: 'Guard Stones (South Approach)', l: '0.20 m x 28 nos.', b: '0.20 m', h: '1.00 m', mat: 'M25 Concrete',
+                est: '28 guard stones along south approach retaining wall copings',
+                target: '-0.2m 0.36m 0.45m', r: '15m',
+                p1: [-0.5, 6.74, 19.0], p2: [-0.5, 6.74, 0.7], p3: [7.5, 6.74, 19.0], p4: [-0.5, 7.74, 19.0]
+            },
+            'GuardStones_North': {
+                n: 'Guard Stones (North Approach)', l: '0.20 m x 28 nos.', b: '0.20 m', h: '1.00 m', mat: 'M25 Concrete',
+                est: '28 guard stones along north approach retaining wall copings',
+                target: '-0.2m 0.36m -0.5m', r: '15m',
+                p1: [-0.5, 6.74, -0.7], p2: [-0.5, 6.74, -19.0], p3: [7.5, 6.74, -0.7], p4: [-0.5, 7.74, -0.7]
+            },
+            'Drainage_South': {
+                n: 'Drainage Pipes (South Abutment)', l: '7.00 m (Spread)', b: '0.075 m Dia', h: '0.30 m', mat: 'PVC pipes',
+                est: '15 drainage pipes at south abutment face to relieve hydrostatic pressure',
+                target: '0.1m 0.12m 0.06m', r: '8m',
+                p1: [1.17, 1.9, 2.55], p2: [5.83, 1.9, 2.55], p3: [1.17, 1.9, -0.05], p4: [1.17, 3.8, 2.55]
+            },
+            'Drainage_North': {
+                n: 'Drainage Pipes (North Abutment)', l: '7.00 m (Spread)', b: '0.075 m Dia', h: '0.30 m', mat: 'PVC pipes',
+                est: '15 drainage pipes at north abutment face to relieve hydrostatic pressure',
+                target: '0.1m 0.12m -0.5m', r: '8m',
+                p1: [1.17, 1.9, -9.95], p2: [5.83, 1.9, -9.95], p3: [1.17, 1.9, -12.55], p4: [1.17, 3.8, -9.95]
+            },
+            'ExpansionJoints_South': {
+                n: 'Expansion Joint (South End)', l: '7.00 m', b: '0.04 m (40 mm gap)', h: '0.095 m', mat: 'Compressible board + sealant',
+                est: 'Transverse expansion joint at south end of deck',
+                target: '0m 0.33m 0m', r: '8m',
+                p1: [0, 6.82, 0.02], p2: [7.0, 6.82, 0.02], p3: [0, 6.82, -0.02], p4: [0, 6.865, 0.02]
+            },
+            'ExpansionJoints_North': {
+                n: 'Expansion Joint (North End)', l: '7.00 m', b: '0.04 m (40 mm gap)', h: '0.095 m', mat: 'Compressible board + sealant',
+                est: 'Transverse expansion joint at north end of deck',
+                target: '0m 0.33m -0.45m', r: '8m',
+                p1: [0, 6.82, -9.98], p2: [7.0, 6.82, -9.98], p3: [0, 6.82, -10.02], p4: [0, 6.865, -9.98]
+            },
+            'NameBoard': {
+                n: 'Name Board (Bridge Name Plate)', l: '4.00 m', b: '0.20 m', h: '1.08 m', mat: 'M25 Concrete',
+                est: 'Bridge name plate cantilevered from left side of deck',
+                target: '-0.2m 0.36m -0.25m', r: '10m',
+                p1: [-0.2, 6.79, 5.3], p2: [-0.2, 6.79, 1.3], p3: [0, 6.79, 5.3], p4: [-0.2, 7.87, 5.3]
             }
         };
 

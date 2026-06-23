@@ -118,30 +118,42 @@ def abut_y(side):
 #  Build geometry groups (component-specific)
 # ═══════════════════════════════════════════════════════════════
 
-pcc_meshes = []
-footing_meshes = []
+pcc_l_meshes = []
+pcc_r_meshes = []
+footing_l_meshes = []
+footing_r_meshes = []
 abutment_l_meshes = []
 abutment_r_meshes = []
 wingwall_l_meshes = []
 wingwall_r_meshes = []
-bedblock_meshes = []
-bearings_meshes = []
+bedblock_l_meshes = []
+bedblock_r_meshes = []
+bearings_s_meshes = []
+bearings_n_meshes = []
 deck_meshes = []
-backwall_meshes = []
+backwall_l_meshes = []
+backwall_r_meshes = []
 asphalt_meshes = []
-approach_slab_meshes = []
-handrail_meshes = []
+approach_slab_s_meshes = []
+approach_slab_n_meshes = []
+handrail_l_meshes = []
+handrail_r_meshes = []
 nameboard_meshes = []
-drainage_meshes = []
-earth_meshes = []
-protection_wall_meshes = []
-guard_stone_meshes = []
+drainage_s_meshes = []
+drainage_n_meshes = []
+earth_s_meshes = []
+earth_n_meshes = []
+protection_wall_s_meshes = []
+protection_wall_n_meshes = []
+guard_stone_s_meshes = []
+guard_stone_n_meshes = []
 rcc_pipe_meshes = []
 retaining_wall_l_south_meshes = []
 retaining_wall_l_north_meshes = []
 retaining_wall_r_south_meshes = []
 retaining_wall_r_north_meshes = []
-expansion_joint_meshes = []
+expansion_joint_s_meshes = []
+expansion_joint_n_meshes = []
 
 
 def add(lst, m):
@@ -157,7 +169,8 @@ z1_pcc = -AF_Z
 for side in ['L', 'R']:
     inn, bkb, _ = abut_y(side)
     cy = (inn + bkb) / 2.0
-    add(pcc_meshes, make_colored_box(-dx_pcc, WIDTH + dx_pcc,
+    target_lst = pcc_l_meshes if side == 'L' else pcc_r_meshes
+    add(target_lst, make_colored_box(-dx_pcc, WIDTH + dx_pcc,
         cy - PCC_Y / 2, cy + PCC_Y / 2, z0_pcc, z1_pcc, MATERIALS["pcc"]))
 
 # 2. Footings
@@ -166,14 +179,15 @@ dx_a = (AF_X - WIDTH) / 2.0
 for side in ['L', 'R']:
     inn, bkb, _ = abut_y(side)
     cy = (inn + bkb) / 2.0
-    add(footing_meshes, make_colored_box(-dx_a, WIDTH + dx_a,
+    target_lst = footing_l_meshes if side == 'L' else footing_r_meshes
+    add(target_lst, make_colored_box(-dx_a, WIDTH + dx_a,
         cy - AF_Y / 2, cy + AF_Y / 2, -AF_Z, 0.0, MATERIALS["footing"]))
     if side == 'L':
         wy0, wy1 = inn - WF_Y - 0.15, inn + 0.15
     else:
         wy0, wy1 = inn - 0.15, inn + WF_Y + 0.15
-    add(footing_meshes, make_colored_box(-WING_TB - 0.15, 0.15, wy0, wy1, -AF_Z, 0.0, MATERIALS["footing"]))
-    add(footing_meshes, make_colored_box(WIDTH - 0.15, WIDTH + WING_TB + 0.15, wy0, wy1, -AF_Z, 0.0, MATERIALS["footing"]))
+    add(target_lst, make_colored_box(-WING_TB - 0.15, 0.15, wy0, wy1, -AF_Z, 0.0, MATERIALS["footing"]))
+    add(target_lst, make_colored_box(WIDTH - 0.15, WIDTH + WING_TB + 0.15, wy0, wy1, -AF_Z, 0.0, MATERIALS["footing"]))
 
 # 3. Abutments
 print("Building abutments...")
@@ -216,15 +230,16 @@ for side in ['L', 'R']:
 
 # 5. Bed blocks
 print("Building bed blocks...")
-add(bedblock_meshes, make_colored_box(0, BB_X, -BB_Y, 0, z_abut, z_bb, MATERIALS["bedblock"]))
-add(bedblock_meshes, make_colored_box(0, BB_X, SPAN, SPAN + BB_Y, z_abut, z_bb, MATERIALS["bedblock"]))
+add(bedblock_l_meshes, make_colored_box(0, BB_X, -BB_Y, 0, z_abut, z_bb, MATERIALS["bedblock"]))
+add(bedblock_r_meshes, make_colored_box(0, BB_X, SPAN, SPAN + BB_Y, z_abut, z_bb, MATERIALS["bedblock"]))
 
 # 6. Bearings
 print("Building bearings...")
 positions_x = [1.5, 3.5, 5.5]
 for yc in [-ovhg / 2.0, SPAN + ovhg / 2.0]:
+    target_lst = bearings_s_meshes if yc < 0 else bearings_n_meshes
     for xc in positions_x:
-        add(bearings_meshes, make_colored_box(xc - BR_S / 2, xc + BR_S / 2,
+        add(target_lst, make_colored_box(xc - BR_S / 2, xc + BR_S / 2,
             yc - BR_S / 2, yc + BR_S / 2, z_bb, z_bb + BR_Z, MATERIALS["steel"]))
 
 # 7. Deck slab
@@ -233,8 +248,8 @@ add(deck_meshes, make_colored_box(0, WIDTH, -ovhg, SPAN + ovhg, z_bb + BR_Z, z_d
 
 # 8. Backwalls
 print("Building backwalls...")
-add(backwall_meshes, make_colored_box(0, WIDTH, -ABUT_TT, -ovhg - EXP_GAP, z_bb, z_deck, MATERIALS["concrete_a"]))
-add(backwall_meshes, make_colored_box(0, WIDTH, SPAN + ovhg + EXP_GAP, SPAN + ABUT_TT, z_bb, z_deck, MATERIALS["concrete_a"]))
+add(backwall_l_meshes, make_colored_box(0, WIDTH, -ABUT_TT, -ovhg - EXP_GAP, z_bb, z_deck, MATERIALS["concrete_a"]))
+add(backwall_r_meshes, make_colored_box(0, WIDTH, SPAN + ovhg + EXP_GAP, SPAN + ABUT_TT, z_bb, z_deck, MATERIALS["concrete_a"]))
 
 # 9. Wearing coat (asphalt)
 print("Building wearing coat...")
@@ -243,8 +258,8 @@ add(asphalt_meshes, make_colored_box(dx_wc, WIDTH - dx_wc, -ovhg, SPAN + ovhg, z
 
 # 9b. Approach slabs
 print("Building approach slabs...")
-add(approach_slab_meshes, make_colored_box(0, WIDTH, -ovhg - EXP_GAP - 3.5, -ovhg - EXP_GAP, z_deck - 0.2, z_deck, MATERIALS["concrete_a"]))
-add(approach_slab_meshes, make_colored_box(0, WIDTH, SPAN + ovhg + EXP_GAP, SPAN + ovhg + EXP_GAP + 3.5, z_deck - 0.2, z_deck, MATERIALS["concrete_a"]))
+add(approach_slab_s_meshes, make_colored_box(0, WIDTH, -ovhg - EXP_GAP - 3.5, -ovhg - EXP_GAP, z_deck - 0.2, z_deck, MATERIALS["concrete_a"]))
+add(approach_slab_n_meshes, make_colored_box(0, WIDTH, SPAN + ovhg + EXP_GAP, SPAN + ovhg + EXP_GAP + 3.5, z_deck - 0.2, z_deck, MATERIALS["concrete_a"]))
 
 # 10. Handrails
 print("Building handrails...")
@@ -253,16 +268,16 @@ y_end = SPAN + ovhg - 0.3
 spacing = (y_end - y_start) / (N_POSTS - 1)
 for i in range(N_POSTS):
     y = y_start + i * spacing
-    add(handrail_meshes, make_colored_box(0, HP_S, y - HP_S / 2, y + HP_S / 2, z_deck, z_deck + HP_H, MATERIALS["handrail"]))
-    add(handrail_meshes, make_colored_box(WIDTH - HP_S, WIDTH, y - HP_S / 2, y + HP_S / 2, z_deck, z_deck + HP_H, MATERIALS["handrail"]))
+    add(handrail_l_meshes, make_colored_box(0, HP_S, y - HP_S / 2, y + HP_S / 2, z_deck, z_deck + HP_H, MATERIALS["handrail"]))
+    add(handrail_r_meshes, make_colored_box(WIDTH - HP_S, WIDTH, y - HP_S / 2, y + HP_S / 2, z_deck, z_deck + HP_H, MATERIALS["handrail"]))
 for rz in [0.4, 0.8]:
     for i in range(N_POSTS - 1):
         y0r = y_start + i * spacing + HP_S / 2
         y1r = y_start + (i + 1) * spacing - HP_S / 2
         if y1r - y0r <= 0:
             continue
-        add(handrail_meshes, make_colored_box(0, HR_T, y0r, y1r, z_deck + rz, z_deck + rz + HR_H, MATERIALS["handrail"]))
-        add(handrail_meshes, make_colored_box(WIDTH - HR_T, WIDTH, y0r, y1r, z_deck + rz, z_deck + rz + HR_H, MATERIALS["handrail"]))
+        add(handrail_l_meshes, make_colored_box(0, HR_T, y0r, y1r, z_deck + rz, z_deck + rz + HR_H, MATERIALS["handrail"]))
+        add(handrail_r_meshes, make_colored_box(WIDTH - HR_T, WIDTH, y0r, y1r, z_deck + rz, z_deck + rz + HR_H, MATERIALS["handrail"]))
 
 # 11. Name board
 print("Building name board...")
@@ -276,8 +291,8 @@ xs_dr = [WIDTH * (i + 1) / (n_x_dr + 1) for i in range(n_x_dr)]
 zs_dr = [z_ftg + ABUT_H * (i + 1) / (n_z_dr + 1) for i in range(n_z_dr)]
 for x in xs_dr:
     for z in zs_dr:
-        add(drainage_meshes, make_colored_cylinder([x, -ABUT_TB - 0.05, z], [x, 0.05, z], DR_R, MATERIALS["misc"]))
-        add(drainage_meshes, make_colored_cylinder([x, SPAN - 0.05, z], [x, SPAN + ABUT_TB + 0.05, z], DR_R, MATERIALS["misc"]))
+        add(drainage_s_meshes, make_colored_cylinder([x, -ABUT_TB - 0.05, z], [x, 0.05, z], DR_R, MATERIALS["misc"]))
+        add(drainage_n_meshes, make_colored_cylinder([x, SPAN - 0.05, z], [x, SPAN + ABUT_TB + 0.05, z], DR_R, MATERIALS["misc"]))
 
 # 13. Earth fill
 print("Building earth fill...")
@@ -288,7 +303,8 @@ segments = [
     (29.0, 39.0), (39.0, 53.0)
 ]
 for (y0, y1) in segments:
-    add(earth_meshes, make_colored_box(0, WIDTH, y0, y1, z_ftg, z_earth_top, MATERIALS["earth"]))
+    target_lst = earth_s_meshes if y1 <= 0 else earth_n_meshes
+    add(target_lst, make_colored_box(0, WIDTH, y0, y1, z_ftg, z_earth_top, MATERIALS["earth"]))
 
 # 14. Protection walls
 print("Building protection walls...")
@@ -308,14 +324,15 @@ def build_pw(x0, x1, y_inner, y_dir):
         tb1 = wt_b_pw + t1 * (wt_t_pw - wt_b_pw)
         t_max = max(tb0, tb1)
         col = MATERIALS["concrete_a"] if i % 2 == 0 else MATERIALS["concrete_b"]
+        target_lst = protection_wall_s_meshes if y_dir == -1 else protection_wall_n_meshes
         if y_dir == -1:
-            add(protection_wall_meshes, make_colored_box(x0, x1, y_inner - t_max, y_inner, zi0, zi1, col))
+            add(target_lst, make_colored_box(x0, x1, y_inner - t_max, y_inner, zi0, zi1, col))
         else:
-            add(protection_wall_meshes, make_colored_box(x0, x1, y_inner, y_inner + t_max, zi0, zi1, col))
+            add(target_lst, make_colored_box(x0, x1, y_inner, y_inner + t_max, zi0, zi1, col))
     if y_dir == -1:
-        add(footing_meshes, make_colored_box(x0, x1, y_inner - f_w, y_inner, z_f_bottom, z_pw_base, MATERIALS["footing"]))
+        add(footing_l_meshes, make_colored_box(x0, x1, y_inner - f_w, y_inner, z_f_bottom, z_pw_base, MATERIALS["footing"]))
     else:
-        add(footing_meshes, make_colored_box(x0, x1, y_inner, y_inner + f_w, z_f_bottom, z_pw_base, MATERIALS["footing"]))
+        add(footing_r_meshes, make_colored_box(x0, x1, y_inner, y_inner + f_w, z_f_bottom, z_pw_base, MATERIALS["footing"]))
 
 xl_dn = -WING_TB - 10.0; xl_up = -WING_TB
 xr_up = WIDTH + WING_TB; xr_dn = WIDTH + WING_TB + 10.0
@@ -331,12 +348,12 @@ rw_top_z = 2.74 + 4.0
 for i in range(gs_per_side):
     y = -ovhg - 1.0 - i * gs_sp
     if y >= -19.0:
-        add(guard_stone_meshes, make_colored_box(-0.5, -0.5 + GS_S, y, y + GS_S, rw_top_z, rw_top_z + GS_H, MATERIALS["bedblock"]))
-        add(guard_stone_meshes, make_colored_box(WIDTH + 0.5 - GS_S, WIDTH + 0.5, y, y + GS_S, rw_top_z, rw_top_z + GS_H, MATERIALS["bedblock"]))
+        add(guard_stone_s_meshes, make_colored_box(-0.5, -0.5 + GS_S, y, y + GS_S, rw_top_z, rw_top_z + GS_H, MATERIALS["bedblock"]))
+        add(guard_stone_s_meshes, make_colored_box(WIDTH + 0.5 - GS_S, WIDTH + 0.5, y, y + GS_S, rw_top_z, rw_top_z + GS_H, MATERIALS["bedblock"]))
     y2 = SPAN + ovhg + 1.0 + i * gs_sp
     if y2 <= 53.0:
-        add(guard_stone_meshes, make_colored_box(-0.5, -0.5 + GS_S, y2, y2 + GS_S, rw_top_z, rw_top_z + GS_H, MATERIALS["bedblock"]))
-        add(guard_stone_meshes, make_colored_box(WIDTH + 0.5 - GS_S, WIDTH + 0.5, y2, y2 + GS_S, rw_top_z, rw_top_z + GS_H, MATERIALS["bedblock"]))
+        add(guard_stone_n_meshes, make_colored_box(-0.5, -0.5 + GS_S, y2, y2 + GS_S, rw_top_z, rw_top_z + GS_H, MATERIALS["bedblock"]))
+        add(guard_stone_n_meshes, make_colored_box(WIDTH + 0.5 - GS_S, WIDTH + 0.5, y2, y2 + GS_S, rw_top_z, rw_top_z + GS_H, MATERIALS["bedblock"]))
 
 # 16. RCC Pipe
 print("Building RCC pipe...")
@@ -368,7 +385,9 @@ def add_rw_seg(side, y0, y1, wall_h, wt_b, wt_t, footings):
         if side == 'L': cx = -wt_b / 2.0
         else: cx = WIDTH + wt_b / 2.0
         col = MATERIALS["footing"] if idx % 2 == 0 else MATERIALS["pcc"]
-        add(footing_meshes if idx % 2 == 0 else pcc_meshes, make_colored_box(cx - w / 2, cx + w / 2, y0, y1, z_f, current_z, col))
+        footing_lst = footing_l_meshes if side == 'L' else footing_r_meshes
+        pcc_lst = pcc_l_meshes if side == 'L' else pcc_r_meshes
+        add(footing_lst if idx % 2 == 0 else pcc_lst, make_colored_box(cx - w / 2, cx + w / 2, y0, y1, z_f, current_z, col))
         current_z = z_f
 
 for s in ['L', 'R']:
@@ -388,8 +407,8 @@ add_rw_seg('R', 39.0, 53.0, 4.0, 1.0, 0.4, [(0.95, 0.3), (0.95, 0.15)])
 # 18. Expansion joints
 print("Building expansion joints...")
 g = EXP_GAP; groove = 0.02
-add(expansion_joint_meshes, make_colored_box(0, WIDTH, -g / 2, g / 2, z_deck - groove, z_deck + WC_Z, MATERIALS["misc"]))
-add(expansion_joint_meshes, make_colored_box(0, WIDTH, SPAN - g / 2, SPAN + g / 2, z_deck - groove, z_deck + WC_Z, MATERIALS["misc"]))
+add(expansion_joint_s_meshes, make_colored_box(0, WIDTH, -g / 2, g / 2, z_deck - groove, z_deck + WC_Z, MATERIALS["misc"]))
+add(expansion_joint_n_meshes, make_colored_box(0, WIDTH, SPAN - g / 2, SPAN + g / 2, z_deck - groove, z_deck + WC_Z, MATERIALS["misc"]))
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -398,30 +417,42 @@ add(expansion_joint_meshes, make_colored_box(0, WIDTH, SPAN - g / 2, SPAN + g / 
 print("\nMerging geometry groups...")
 
 groups = [
-    (pcc_meshes,              "PCC"),
-    (footing_meshes,          "Footings"),
+    (pcc_l_meshes,            "PCC_Left"),
+    (pcc_r_meshes,            "PCC_Right"),
+    (footing_l_meshes,        "Footings_Left"),
+    (footing_r_meshes,        "Footings_Right"),
     (abutment_l_meshes,       "Abutment_Left"),
     (abutment_r_meshes,       "Abutment_Right"),
     (wingwall_l_meshes,       "WingWalls_Left"),
     (wingwall_r_meshes,       "WingWalls_Right"),
-    (bedblock_meshes,         "BedBlocks"),
-    (bearings_meshes,         "Bearings"),
+    (bedblock_l_meshes,       "BedBlocks_Left"),
+    (bedblock_r_meshes,       "BedBlocks_Right"),
+    (bearings_s_meshes,       "Bearings_South"),
+    (bearings_n_meshes,       "Bearings_North"),
     (deck_meshes,             "DeckSlab"),
-    (backwall_meshes,         "Backwalls"),
+    (backwall_l_meshes,       "Backwalls_Left"),
+    (backwall_r_meshes,       "Backwalls_Right"),
     (asphalt_meshes,          "AsphaltWC"),
-    (approach_slab_meshes,    "ApproachSlabs"),
-    (handrail_meshes,         "Handrails"),
+    (approach_slab_s_meshes,  "ApproachSlabs_South"),
+    (approach_slab_n_meshes,  "ApproachSlabs_North"),
+    (handrail_l_meshes,       "Handrails_Left"),
+    (handrail_r_meshes,       "Handrails_Right"),
     (nameboard_meshes,        "NameBoard"),
-    (drainage_meshes,         "Drainage"),
-    (earth_meshes,            "EarthFill"),
-    (protection_wall_meshes,  "ProtectionWalls"),
-    (guard_stone_meshes,      "GuardStones"),
+    (drainage_s_meshes,       "Drainage_South"),
+    (drainage_n_meshes,       "Drainage_North"),
+    (earth_s_meshes,          "EarthFill_South"),
+    (earth_n_meshes,          "EarthFill_North"),
+    (protection_wall_s_meshes,"ProtectionWalls_South"),
+    (protection_wall_n_meshes,"ProtectionWalls_North"),
+    (guard_stone_s_meshes,    "GuardStones_South"),
+    (guard_stone_n_meshes,    "GuardStones_North"),
     (rcc_pipe_meshes,         "RCC_Pipe"),
     (retaining_wall_l_south_meshes, "RetainingWalls_Left_South"),
     (retaining_wall_l_north_meshes, "RetainingWalls_Left_North"),
     (retaining_wall_r_south_meshes, "RetainingWalls_Right_South"),
     (retaining_wall_r_north_meshes, "RetainingWalls_Right_North"),
-    (expansion_joint_meshes,  "ExpansionJoints"),
+    (expansion_joint_s_meshes,"ExpansionJoints_South"),
+    (expansion_joint_n_meshes,"ExpansionJoints_North"),
 ]
 
 # Z-up → Y-up rotation (-90° around X axis)
