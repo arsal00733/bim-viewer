@@ -1,0 +1,1507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Kakkathode Bridge | Interactive BIM Viewer</title>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Model Viewer Component -->
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js"></script>
+
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --accent: #3b82f6;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --glass-bg: rgba(15, 23, 42, 0.6);
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        body, html { 
+            margin: 0; 
+            padding: 0; 
+            width: 100%; 
+            height: 100%; 
+            overflow: hidden; 
+            background-color: var(--bg-dark);
+            font-family: 'Outfit', sans-serif;
+            color: var(--text-main);
+        }
+
+        /* 3D Viewer Canvas */
+        model-viewer { 
+            width: 100%; 
+            height: 100vh; 
+            --progress-bar-color: var(--accent);
+            --progress-bar-height: 4px;
+            background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+            outline: none;
+        }
+
+        /* Glassmorphism Info Panel */
+        .info-panel { 
+            position: absolute; 
+            top: 24px; 
+            left: 24px; 
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            padding: 20px 24px; 
+            border-radius: 16px; 
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3); 
+            pointer-events: auto; 
+            max-width: 320px;
+            animation: slideIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            opacity: 0;
+            transform: translateY(-20px);
+            transition: padding 0.3s ease;
+        }
+
+        .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            gap: 12px;
+        }
+
+        .panel-header-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+        }
+
+        .toggle-btn {
+            display: none;
+            width: 32px;
+            height: 32px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            background: rgba(255, 255, 255, 0.06);
+            border-radius: 8px;
+            color: #94a3b8;
+            cursor: pointer;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: all 0.2s ease;
+        }
+
+        .toggle-btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+            color: #fff;
+        }
+
+        .toggle-btn svg {
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .info-panel.minimized .toggle-btn svg {
+            transform: rotate(180deg);
+        }
+
+        .panel-body {
+            overflow: hidden;
+            max-height: 500px;
+            transition: max-height 0.35s cubic-bezier(0.16, 1, 0.3, 1), 
+                        opacity 0.25s ease,
+                        margin-top 0.3s ease;
+            opacity: 1;
+            margin-top: 0;
+        }
+
+        .info-panel.minimized .panel-body {
+            max-height: 0;
+            opacity: 0;
+            margin-top: 0;
+        }
+
+        .info-panel.minimized {
+            padding: 14px 18px;
+        }
+
+        .info-panel.minimized .tag {
+            margin-bottom: 0;
+        }
+
+        .info-panel.minimized h2 {
+            margin-bottom: 0;
+            font-size: 16px;
+        }
+
+        /* Info Panel Close and Restore Buttons */
+        .info-close-btn {
+            width: 32px;
+            height: 32px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            background: rgba(255, 255, 255, 0.06);
+            border-radius: 8px;
+            color: #94a3b8;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: all 0.2s ease;
+        }
+        .info-close-btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+            color: #fff;
+        }
+        .info-restore-btn {
+            position: absolute;
+            bottom: 24px;
+            left: 24px;
+            width: 44px;
+            height: 44px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 50%;
+            color: #60a5fa;
+            cursor: pointer;
+            display: none; /* Hidden by default */
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            z-index: 98;
+            transition: all 0.2s ease;
+        }
+        .info-restore-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: #fff;
+            transform: scale(1.05);
+        }
+
+        @keyframes slideIn {
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .tag {
+            display: inline-block;
+            background: rgba(59, 130, 246, 0.2);
+            color: #60a5fa;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            margin-bottom: 12px;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+
+        h2 { 
+            margin: 0 0 8px 0; 
+            font-size: 22px; 
+            font-weight: 600;
+            letter-spacing: -0.5px;
+            background: linear-gradient(to right, #fff, #94a3b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        p { 
+            margin: 0 0 16px 0; 
+            font-size: 14px; 
+            color: var(--text-muted); 
+            line-height: 1.5;
+        }
+
+        .controls-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .control-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 13px;
+            color: #cbd5e1;
+        }
+
+        .control-icon {
+            width: 28px;
+            height: 28px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+
+        /* AR Button Customization */
+        .ar-button {
+            position: absolute;
+            bottom: 32px;
+            right: 32px;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 14px 24px;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 600;
+            font-size: 15px;
+            box-shadow: 0 8px 24px rgba(59, 130, 246, 0.4);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .ar-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 28px rgba(59, 130, 246, 0.5);
+        }
+
+        .ar-button:active {
+            transform: translateY(1px);
+        }
+
+        /* Custom Loading Poster */
+        #poster {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-dark);
+            z-index: 10;
+        }
+
+        .loader {
+            width: 48px;
+            height: 48px;
+            border: 3px solid rgba(59, 130, 246, 0.2);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 16px;
+        }
+
+        @keyframes spin { 
+            to { transform: rotate(360deg); } 
+        }
+
+        .loading-text {
+            color: var(--text-muted);
+            font-size: 14px;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            animation: pulse 1.5s ease-in-out infinite alternate;
+        }
+
+        @keyframes pulse {
+            to { opacity: 0.5; }
+        }
+
+        /* Presentation Vignette Overlay — disabled, kept for reference */
+        #vignetteOverlay { display: none; }
+
+        /* CAD Dimension Label — positioned by JS */
+        .dim-badge {
+            position: fixed;
+            z-index: 9999;
+            background: rgba(10, 14, 30, 0.93);
+            border: 1.5px solid #60a5fa;
+            color: #e2e8f0;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 700;
+            font-family: 'Courier New', monospace;
+            white-space: nowrap;
+            pointer-events: none;
+            display: none;
+            transform: translate(-50%, -50%);
+        }
+
+        /* Mobile Adjustments */
+        @media (max-width: 768px) {
+            .info-panel {
+                top: auto;
+                bottom: 16px;
+                left: 12px;
+                right: 12px;
+                max-width: none;
+                pointer-events: auto;
+            }
+
+            .toggle-btn {
+                display: flex;
+            }
+            
+            .ar-button {
+                bottom: auto;
+                top: 24px;
+                right: 16px;
+                padding: 12px 20px;
+            }
+
+            .info-restore-btn {
+                bottom: 16px;
+                left: 12px;
+            }
+        }
+
+        /* Dimensioning Hotspots and CAD HUD Styles */
+        #hotspot-p1, #hotspot-p2, #hotspot-p3, #hotspot-p4 {
+            display: block !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+            width: 1px !important;
+            height: 1px !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            border: none !important;
+        }
+
+        #cadHud {
+            position: absolute;
+            bottom: 24px;
+            left: 24px;
+            background: rgba(15, 23, 42, 0.92);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            padding: 14px 18px;
+            color: #f8fafc;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            font-size: 11px;
+            z-index: 100;
+            display: none;
+            flex-direction: column;
+            gap: 6px;
+            width: 320px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.4);
+            transition: all 0.3s ease;
+            animation: slideUp 0.3s ease-out;
+        }
+
+        #cadHud .hud-header {
+            font-size: 13px;
+            font-weight: 800;
+            color: #38bdf8;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 6px;
+            margin-bottom: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        #cadHud .hud-close {
+            cursor: pointer;
+            color: #94a3b8;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.2s;
+        }
+
+        #cadHud .hud-close:hover {
+            color: #f8fafc;
+        }
+
+        #cadHud .hud-row {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        #cadHud .hud-row span:first-child {
+            color: #94a3b8;
+            font-weight: 600;
+        }
+
+        #cadHud .hud-row span:last-child {
+            color: #f8fafc;
+            font-weight: 700;
+        }
+
+        #cadHud .hud-estimate {
+            background: rgba(74, 222, 128, 0.1);
+            border: 1px solid rgba(74, 222, 128, 0.25);
+            border-radius: 6px;
+            padding: 8px;
+            color: #4ade80;
+            margin-top: 4px;
+            font-size: 10.5px;
+            line-height: 1.4;
+        }
+
+        @media (max-width: 768px) {
+            #cadHud {
+                bottom: 80px;
+                left: 16px;
+                right: 16px;
+                width: auto;
+            }
+        }
+
+        /* Measurements Toggle & Card Styles */
+        .measurements-toggle {
+            position: absolute;
+            top: 24px;
+            right: 180px;
+            background: rgba(248, 250, 252, 0.95);
+            backdrop-filter: blur(8px);
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            padding: 8px 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #334155;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            z-index: 100;
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+        .measurements-toggle:hover {
+            background: #ffffff;
+            border-color: #0078f5;
+            color: #0078f5;
+        }
+        .measurements-toggle.active {
+            background: #0078f5;
+            color: #ffffff;
+            border-color: #0078f5;
+        }
+        .measurements-toggle .toggle-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #94a3b8;
+            transition: background-color 0.2s;
+        }
+        .measurements-toggle.active .toggle-dot {
+            background: #4ade80;
+            box-shadow: 0 0 8px #4ade80;
+        }
+
+        .measurement-card {
+            position: absolute;
+            bottom: 110px;
+            right: 24px;
+            width: 290px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(8px);
+            border: 1px solid #cbd5e1;
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            z-index: 100;
+            display: none;
+            flex-direction: column;
+            animation: slideUp 0.3s ease-out;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(10px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .measurement-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 8px;
+        }
+
+        .measurement-card-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #1e293b;
+        }
+
+        .measurement-card-close {
+            cursor: pointer;
+            color: #94a3b8;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.2s;
+        }
+
+        .measurement-card-close:hover {
+            color: #475569;
+        }
+
+        .measurement-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .measurement-val-box {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 8px;
+            text-align: center;
+        }
+
+        .measurement-val-label {
+            font-size: 9px;
+            font-weight: 700;
+            color: #64748b;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+
+        .measurement-val-num {
+            font-size: 11px;
+            font-weight: 700;
+            color: #0078f5;
+            word-break: break-word;
+        }
+
+        .measurement-extra-info {
+            font-size: 11px;
+            color: #15803d;
+            line-height: 1.4;
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            border-radius: 6px;
+            padding: 8px;
+            margin-top: 4px;
+        }
+
+        model-viewer.measure-mode-active {
+            cursor: crosshair !important;
+        }
+
+        @media (max-width: 768px) {
+            .measurements-toggle {
+                top: 24px;
+                left: 124px;
+                right: auto;
+                font-size: 11px;
+                padding: 6px 12px;
+            }
+            .measurement-card {
+                bottom: 100px;
+                left: 16px;
+                right: 16px;
+                width: auto;
+            }
+        }
+
+        /* 3D View Cube Styles - Revit UI Theme */
+        :root {
+            --cube-size: 68px;
+            --cube-half: 34px;
+            --cube-corner-size: 14px;
+            --cube-corner-half: 7px;
+            --cube-edge-height: 10px;
+            --cube-edge-half: 5px;
+        }
+        @media (max-width: 768px) {
+            :root {
+                --cube-size: 46px;
+                --cube-half: 23px;
+                --cube-corner-size: 10px;
+                --cube-corner-half: 5px;
+                --cube-edge-height: 8px;
+                --cube-edge-half: 4px;
+            }
+        }
+
+        .view-cube-container {
+            position: absolute;
+            top: 24px;
+            right: 24px;
+            width: 140px;
+            height: 140px;
+            z-index: 99;
+            pointer-events: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        @media (max-width: 768px) {
+            .view-cube-container {
+                right: auto;
+                left: 16px;
+                top: 16px;
+                width: 100px;
+                height: 100px;
+            }
+        }
+
+        /* Home Button - Revit Style */
+        .home-btn {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 24px;
+            height: 24px;
+            background: rgba(248, 250, 252, 0.9);
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            color: #475569;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 100;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: all 0.2s ease;
+        }
+        .home-btn:hover {
+            background: #0078f5;
+            color: #ffffff;
+            border-color: #0078f5;
+            transform: scale(1.05);
+        }
+        @media (max-width: 768px) {
+            .home-btn {
+                width: 20px;
+                height: 20px;
+                top: -2px;
+                left: -2px;
+            }
+            .home-btn svg {
+                width: 11px;
+                height: 11px;
+            }
+        }
+
+        .cube-viewport {
+            width: 100%;
+            height: 100%;
+            perspective: 350px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .cube {
+            width: var(--cube-size);
+            height: var(--cube-size);
+            position: relative;
+            transform-style: preserve-3d;
+            transform: rotateX(-30deg) rotateY(45deg);
+            cursor: pointer;
+            pointer-events: auto;
+        }
+
+        /* Cube Face Styles - Light Grey Revit Theme */
+        .cube-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #ffffff 0%, #eceff1 100%);
+            border: 1.5px solid #b0bec5;
+            color: #37474f;
+            font-size: 10px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+            backface-visibility: visible;
+            box-shadow: inset 0 0 8px rgba(0,0,0,0.05), 0 2px 4px rgba(0,0,0,0.08);
+            transition: background 0.2s, border-color 0.2s, color 0.2s;
+        }
+
+        @media (max-width: 768px) {
+            .cube-face {
+                font-size: 8px;
+                border-width: 1px;
+            }
+        }
+
+        .cube-face:hover {
+            background: rgba(0, 120, 245, 0.25);
+            border-color: #0078f5;
+            color: #005bc1;
+        }
+
+        /* Face Transforms */
+        .front  { transform: rotateY(  0deg) translateZ(var(--cube-half)); }
+        .back   { transform: rotateY(180deg) translateZ(var(--cube-half)); }
+        .right  { transform: rotateY( 90deg) translateZ(var(--cube-half)); }
+        .left   { transform: rotateY(-90deg) translateZ(var(--cube-half)); }
+        .top    { transform: rotateX( 90deg) translateZ(var(--cube-half)); }
+        .bottom { transform: rotateX(-90deg) translateZ(var(--cube-half)); }
+
+        /* Revit Cube Corners Highlight */
+        .cube-corner {
+            position: absolute;
+            width: var(--cube-corner-size);
+            height: var(--cube-corner-size);
+            margin-left: calc(-1 * var(--cube-corner-half));
+            margin-top: calc(-1 * var(--cube-corner-half));
+            background: transparent;
+            z-index: 10;
+            cursor: pointer;
+            transition: background-color 0.15s, border-color 0.15s;
+            transform-style: preserve-3d;
+        }
+
+        .cube-corner:hover {
+            background: rgba(0, 120, 245, 0.85);
+            border: 1px solid #00d2ff;
+            box-shadow: 0 0 5px rgba(0, 210, 255, 0.8);
+        }
+
+        /* Corner Positions */
+        .tfl { transform: translate3d(calc(-1 * var(--cube-half)), calc(-1 * var(--cube-half)), var(--cube-half)); }
+        .tfr { transform: translate3d(var(--cube-half), calc(-1 * var(--cube-half)), var(--cube-half)); }
+        .tbl { transform: translate3d(calc(-1 * var(--cube-half)), calc(-1 * var(--cube-half)), calc(-1 * var(--cube-half))); }
+        .tbr { transform: translate3d(var(--cube-half), calc(-1 * var(--cube-half)), calc(-1 * var(--cube-half))); }
+        .bfl { transform: translate3d(calc(-1 * var(--cube-half)), var(--cube-half), var(--cube-half)); }
+        .bfr { transform: translate3d(var(--cube-half), var(--cube-half), var(--cube-half)); }
+        .bbl { transform: translate3d(calc(-1 * var(--cube-half)), var(--cube-half), calc(-1 * var(--cube-half))); }
+        .bbr { transform: translate3d(var(--cube-half), var(--cube-half), calc(-1 * var(--cube-half))); }
+
+        /* Revit Cube Edges Highlight */
+        .cube-edge {
+            position: absolute;
+            background: transparent;
+            z-index: 5;
+            cursor: pointer;
+            transition: background-color 0.15s, border-color 0.15s;
+            transform-style: preserve-3d;
+        }
+
+        .cube-edge:hover {
+            background: rgba(0, 120, 245, 0.7);
+            border: 1px solid #00d2ff;
+        }
+
+        /* Edge dimensions & positions */
+        /* Horizontal (along X) edges */
+        .tf, .tb, .bf, .bb {
+            width: calc(2 * var(--cube-half) - var(--cube-corner-size));
+            height: var(--cube-edge-height);
+            margin-left: calc(-1 * (var(--cube-half) - var(--cube-corner-half)));
+            margin-top: calc(-1 * var(--cube-edge-half));
+        }
+        .tf { transform: translate3d(0, calc(-1 * var(--cube-half)), var(--cube-half)); }
+        .tb { transform: translate3d(0, calc(-1 * var(--cube-half)), calc(-1 * var(--cube-half))); }
+        .bf { transform: translate3d(0, var(--cube-half), var(--cube-half)); }
+        .bb { transform: translate3d(0, var(--cube-half), calc(-1 * var(--cube-half))); }
+
+        /* Depth (along Z) edges */
+        .tl, .tr, .bl, .br {
+            width: calc(2 * var(--cube-half) - var(--cube-corner-size));
+            height: var(--cube-edge-height);
+            margin-left: calc(-1 * (var(--cube-half) - var(--cube-corner-half)));
+            margin-top: calc(-1 * var(--cube-edge-half));
+        }
+        .tl { transform: translate3d(calc(-1 * var(--cube-half)), calc(-1 * var(--cube-half)), 0) rotateY(90deg); }
+        .tr { transform: translate3d(var(--cube-half), calc(-1 * var(--cube-half)), 0) rotateY(90deg); }
+        .bl { transform: translate3d(calc(-1 * var(--cube-half)), var(--cube-half), 0) rotateY(90deg); }
+        .br { transform: translate3d(var(--cube-half), var(--cube-half), 0) rotateY(90deg); }
+
+        /* Vertical (along Y) edges */
+        .fl, .fr, .back-l, .back-r {
+            width: calc(2 * var(--cube-half) - var(--cube-corner-size));
+            height: var(--cube-edge-height);
+            margin-left: calc(-1 * (var(--cube-half) - var(--cube-corner-half)));
+            margin-top: calc(-1 * var(--cube-edge-half));
+        }
+        .fl { transform: translate3d(calc(-1 * var(--cube-half)), 0, var(--cube-half)) rotateZ(90deg); }
+        .fr { transform: translate3d(var(--cube-half), 0, var(--cube-half)) rotateZ(90deg); }
+        .back-l { transform: translate3d(calc(-1 * var(--cube-half)), 0, calc(-1 * var(--cube-half))) rotateZ(90deg); }
+        .back-r { transform: translate3d(var(--cube-half), 0, calc(-1 * var(--cube-half))) rotateZ(90deg); }
+
+        /* Compass Ground Ring - Revit Style */
+        .compass-ring {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 114px;
+            height: 114px;
+            margin-top: -57px;
+            margin-left: -57px;
+            background: rgba(226, 232, 240, 0.4);
+            border: 9px solid #b0bec5;
+            border-radius: 50%;
+            transform-style: preserve-3d;
+            transform: rotateX(65deg) rotateZ(0deg);
+            pointer-events: none;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15), inset 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        @media (max-width: 768px) {
+            .compass-ring {
+                width: 82px;
+                height: 82px;
+                margin-top: -41px;
+                margin-left: -41px;
+                border-width: 6px;
+            }
+        }
+
+        .compass-label {
+            position: absolute;
+            font-size: 10px;
+            font-weight: 800;
+            color: #37474f;
+            width: 12px;
+            height: 12px;
+            text-align: center;
+            line-height: 12px;
+        }
+
+        @media (max-width: 768px) {
+            .compass-label {
+                font-size: 8px;
+            }
+        }
+
+        .compass-label.n { top: 2px; left: 50%; margin-left: -6px; }
+        .compass-label.s { bottom: 2px; left: 50%; margin-left: -6px; }
+        .compass-label.w { left: 2px; top: 50%; margin-top: -6px; }
+        .compass-label.e { right: 2px; top: 50%; margin-top: -6px; }
+    </style>
+</head>
+<body>
+
+    <model-viewer 
+        src="./bridge_model.glb?v=5" 
+        camera-controls 
+        interaction-prompt="auto" 
+        shadow-intensity="1.5" 
+        shadow-softness="0.2"
+        exposure="1.1"
+        environment-image="neutral"
+        ar
+        ar-modes="scene-viewer quick-look webxr"
+        ar-scale="auto"
+        ar-placement="floor"
+        scale="0.05 0.05 0.05"
+        camera-orbit="45deg 60deg auto">
+        
+        <!-- Custom AR Button -->
+        <button slot="ar-button" class="ar-button">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 3h6l-3 3"/>
+                <path d="M21 3h-6l3 3"/>
+                <path d="M3 21h6l-3-3"/>
+                <path d="M21 21h-6l3-3"/>
+                <rect x="7" y="7" width="10" height="10" rx="2"/>
+            </svg>
+            View in AR
+        </button>
+
+        <!-- Custom Loading Screen -->
+        <div slot="poster" id="poster">
+            <div class="loader"></div>
+            <div class="loading-text">Loading 3D BIM Model...</div>
+        </div>
+
+        <!-- Hotspots for CAD-style dimensioning -->
+        <div slot="hotspot-p1" id="hotspot-p1" data-position="0 0 0"></div>
+        <div slot="hotspot-p2" id="hotspot-p2" data-position="0 0 0"></div>
+        <div slot="hotspot-p3" id="hotspot-p3" data-position="0 0 0"></div>
+        <div slot="hotspot-p4" id="hotspot-p4" data-position="0 0 0"></div>
+    </model-viewer>
+
+    <!-- 2D Dimension Label Overlays (positioned dynamically in JS) -->
+    <div id="dim-badge-l" class="dim-badge">L: -</div>
+    <div id="dim-badge-w" class="dim-badge">W: -</div>
+    <div id="dim-badge-h" class="dim-badge">H: -</div>
+
+    <!-- SVG overlay for CAD dimension lines -->
+    <svg id="dimensionOverlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9999; display: none; overflow: visible;"></svg>
+
+    <!-- Presentation Vignette Blur -->
+    <div id="vignetteOverlay"></div>
+
+    <!-- Revit-style 3D View Cube Container -->
+    <div class="view-cube-container">
+        <!-- Home Button -->
+        <div class="home-btn" onclick="resetCameraView()" title="Home View">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+            </svg>
+        </div>
+
+        <div class="compass-ring" id="compassRing">
+            <div class="compass-label n">N</div>
+            <div class="compass-label e">E</div>
+            <div class="compass-label s">S</div>
+            <div class="compass-label w">W</div>
+        </div>
+        
+        <div class="cube-viewport">
+            <div class="cube" id="viewCube">
+                <!-- Faces -->
+                <div class="cube-face front" onclick="setCameraView('front')">FRONT</div>
+                <div class="cube-face back" onclick="setCameraView('back')">BACK</div>
+                <div class="cube-face top" onclick="setCameraView('top')">TOP</div>
+                <div class="cube-face bottom" onclick="setCameraView('bottom')">BOTTOM</div>
+                <div class="cube-face left" onclick="setCameraView('left')">LEFT</div>
+                <div class="cube-face right" onclick="setCameraView('right')">RIGHT</div>
+
+                <!-- Corners -->
+                <div class="cube-corner tfl" onclick="setCameraView('tfl')" title="Top Front Left"></div>
+                <div class="cube-corner tfr" onclick="setCameraView('tfr')" title="Top Front Right"></div>
+                <div class="cube-corner tbl" onclick="setCameraView('tbl')" title="Top Back Left"></div>
+                <div class="cube-corner tbr" onclick="setCameraView('tbr')" title="Top Back Right"></div>
+                <div class="cube-corner bfl" onclick="setCameraView('bfl')" title="Bottom Front Left"></div>
+                <div class="cube-corner bfr" onclick="setCameraView('bfr')" title="Bottom Front Right"></div>
+                <div class="cube-corner bbl" onclick="setCameraView('bbl')" title="Bottom Back Left"></div>
+                <div class="cube-corner bbr" onclick="setCameraView('bbr')" title="Bottom Back Right"></div>
+
+                <!-- Edges -->
+                <div class="cube-edge tf" onclick="setCameraView('tf')" title="Top Front"></div>
+                <div class="cube-edge tb" onclick="setCameraView('tb')" title="Top Back"></div>
+                <div class="cube-edge tl" onclick="setCameraView('tl')" title="Top Left"></div>
+                <div class="cube-edge tr" onclick="setCameraView('tr')" title="Top Right"></div>
+                <div class="cube-edge bf" onclick="setCameraView('bf')" title="Bottom Front"></div>
+                <div class="cube-edge bb" onclick="setCameraView('bb')" title="Bottom Back"></div>
+                <div class="cube-edge bl" onclick="setCameraView('bl')" title="Bottom Left"></div>
+                <div class="cube-edge br" onclick="setCameraView('br')" title="Bottom Right"></div>
+                <div class="cube-edge fl" onclick="setCameraView('fl')" title="Front Left"></div>
+                <div class="cube-edge fr" onclick="setCameraView('fr')" title="Front Right"></div>
+                <div class="cube-edge back-l" onclick="setCameraView('back-l')" title="Back Left"></div>
+                <div class="cube-edge back-r" onclick="setCameraView('back-r')" title="Back Right"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Glassmorphism Overlay -->
+    <div class="info-panel" id="infoPanel">
+        <div class="panel-header" onclick="togglePanel()">
+            <div class="panel-header-left">
+                <span class="tag">Navakerala Sadas</span>
+                <h2>Kakkathode Bridge</h2>
+            </div>
+            <div class="panel-header-right" style="display: flex; gap: 8px; align-items: center; pointer-events: auto;">
+                <button class="toggle-btn" id="toggleBtn" aria-label="Toggle panel">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="6 15 12 9 18 15"></polyline>
+                    </svg>
+                </button>
+                <button class="info-close-btn" onclick="closeInfoPanel(event)" aria-label="Close Info Panel">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <div class="panel-body">
+            <p>Interactive DPR-accurate structural model. Verified dimensions, footings, and approach roads.</p>
+            <div class="controls-list">
+                <div class="control-item">
+                    <div class="control-icon">👉</div>
+                    <span>Drag to rotate</span>
+                </div>
+                <div class="control-item">
+                    <div class="control-icon">🔍</div>
+                    <span>Pinch or scroll to zoom</span>
+                </div>
+                <div class="control-item">
+                    <div class="control-icon">✌️</div>
+                    <span>Two fingers to pan</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Restore Info Button -->
+    <div class="info-restore-btn" id="infoRestoreBtn" onclick="restoreInfoPanel(event)" title="Show Info Panel">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+        </svg>
+    </div>
+
+    <!-- Measurements Toggle Button -->
+    <div class="measurements-toggle" id="measToggle" onclick="toggleMeasurementMode()">
+        <span class="toggle-dot"></span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;">
+            <rect x="2" y="7" width="20" height="10" rx="2" ry="2"></rect>
+            <line x1="6" y1="7" x2="6" y2="12"></line>
+            <line x1="10" y1="7" x2="10" y2="10"></line>
+            <line x1="14" y1="7" x2="14" y2="12"></line>
+            <line x1="18" y1="7" x2="18" y2="10"></line>
+        </svg>
+        <span>Ruler / Measurements</span>
+    </div>
+
+    <!-- CAD HUD for Details -->
+    <div id="cadHud">
+        <div class="hud-header">
+            <span id="hudName">Component Name</span>
+            <div class="hud-close" onclick="deselectComponent()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </div>
+        </div>
+        <div class="hud-row">
+            <span>Material:</span>
+            <span id="hudMat">-</span>
+        </div>
+        <div class="hud-estimate" id="hudEst">
+            DPR Estimate: -
+        </div>
+    </div>
+
+    <script>
+        const modelViewer = document.querySelector('model-viewer');
+        const viewCube = document.getElementById('viewCube');
+        const compassRing = document.getElementById('compassRing');
+
+        function togglePanel() {
+            document.getElementById('infoPanel').classList.toggle('minimized');
+        }
+
+        window.closeInfoPanel = function(event) {
+            if (event) event.stopPropagation();
+            document.getElementById('infoPanel').style.display = 'none';
+            document.getElementById('infoRestoreBtn').style.display = 'flex';
+        };
+
+        window.restoreInfoPanel = function(event) {
+            if (event) event.stopPropagation();
+            document.getElementById('infoPanel').style.display = 'block';
+            document.getElementById('infoRestoreBtn').style.display = 'none';
+        };
+
+        // Auto-minimize on mobile
+        if (window.innerWidth <= 768) {
+            document.getElementById('infoPanel').classList.add('minimized');
+        }
+
+        // Home View Reset
+        window.resetCameraView = function() {
+            modelViewer.cameraOrbit = '45deg 60deg auto';
+        };
+
+        // Smooth camera transitions for View Cube faces, corners, and edges
+        window.setCameraView = function(view) {
+            let orbit = '';
+            switch(view) {
+                // Faces
+                case 'top':     orbit = '0deg 0.1deg auto'; break;
+                case 'bottom':  orbit = '0deg 179.9deg auto'; break;
+                case 'front':   orbit = '0deg 90deg auto'; break;
+                case 'back':    orbit = '180deg 90deg auto'; break;
+                case 'left':    orbit = '-90deg 90deg auto'; break;
+                case 'right':   orbit = '90deg 90deg auto'; break;
+                
+                // Corners (Isometric Views)
+                case 'tfl':     orbit = '-45deg 45deg auto'; break;
+                case 'tfr':     orbit = '45deg 45deg auto'; break;
+                case 'tbl':     orbit = '-135deg 45deg auto'; break;
+                case 'tbr':     orbit = '135deg 45deg auto'; break;
+                case 'bfl':     orbit = '-45deg 135deg auto'; break;
+                case 'bfr':     orbit = '45deg 135deg auto'; break;
+                case 'bbl':     orbit = '-135deg 135deg auto'; break;
+                case 'bbr':     orbit = '135deg 135deg auto'; break;
+
+                // Edges
+                case 'tf':      orbit = '0deg 45deg auto'; break;
+                case 'tb':      orbit = '180deg 45deg auto'; break;
+                case 'tl':      orbit = '-90deg 45deg auto'; break;
+                case 'tr':      orbit = '90deg 45deg auto'; break;
+                case 'bf':      orbit = '0deg 135deg auto'; break;
+                case 'bb':      orbit = '180deg 135deg auto'; break;
+                case 'bl':      orbit = '-90deg 135deg auto'; break;
+                case 'br':      orbit = '90deg 135deg auto'; break;
+                case 'fl':      orbit = '-45deg 90deg auto'; break;
+                case 'fr':      orbit = '45deg 90deg auto'; break;
+                case 'back-l':  orbit = '-135deg 90deg auto'; break;
+                case 'back-r':  orbit = '135deg 90deg auto'; break;
+            }
+            if (orbit) {
+                modelViewer.cameraOrbit = orbit;
+            }
+        };
+
+        // Sync view cube and compass ring rotation with model-viewer camera angle
+        modelViewer.addEventListener('camera-change', () => {
+            const orbit = modelViewer.getCameraOrbit();
+            
+            // Convert theta and phi from radians to degrees
+            const thetaDeg = (orbit.theta * 180) / Math.PI;
+            const phiDeg = (orbit.phi * 180) / Math.PI;
+            
+            // Rotate cube in full 3D
+            viewCube.style.transform = `rotateX(${phiDeg - 90}deg) rotateY(${-thetaDeg}deg)`;
+            
+            // Spin compass ring horizontally
+            compassRing.style.transform = `rotateX(65deg) rotateZ(${-thetaDeg}deg)`;
+        });
+
+        // ══════════════════════════════════════════════════════════════
+        //  Measurements / CAD-Style 3D Ruler Mode
+        // ══════════════════════════════════════════════════════════════
+        let measurementModeActive = true; // Always on
+        let activeComponentKey = null;
+
+                const db = {
+            'Abutment_Left': {
+                n: 'Abutment (Left Side)', l: '7.30 m', b: '2.50 m (Base) / 1.00 m (Top)', h: '5.70 m', mat: 'M25 Concrete',
+                est: '1 x 7.30 x ((2.50 + 1.00)/2) x 5.70 = 72.82 m³',
+                target: '0m 0.14m 0.06m', r: '12m',
+                p1: [-3.85, 0, -0.1], p2: [3.85, 0, -0.1], p3: [-3.85, 0, 2.6], p4: [-3.85, 5.7, -0.1]
+            },
+            'Abutment_Right': {
+                n: 'Abutment (Right Side)', l: '7.30 m', b: '2.50 m (Base) / 1.00 m (Top)', h: '5.70 m', mat: 'M25 Concrete',
+                est: '1 x 7.30 x ((2.50 + 1.00)/2) x 5.70 = 72.82 m³',
+                target: '0m 0.14m -0.56m', r: '12m',
+                p1: [-3.85, 0, -9.9], p2: [3.85, 0, -9.9], p3: [-3.85, 0, -12.6], p4: [-3.85, 5.7, -9.9]
+            },
+            'WingWalls_Left': {
+                n: 'Wing Walls (Left Side)', l: '5.00 m', b: '0.60 m (Base) / 0.40 m (Top)', h: '6.74 m', mat: 'M25 Concrete',
+                est: '2 x 5.00 x ((0.60 + 0.40)/2) x 6.74 = 33.70 m³',
+                target: '-0.1m 0.17m 0.13m', r: '12m',
+                p1: [-0.8, 0, -0.2], p2: [-0.8, 0, 5.2], p3: [0.2, 0, -0.2], p4: [-0.8, 6.74, -0.2]
+            },
+            'WingWalls_Right': {
+                n: 'Wing Walls (Right Side)', l: '5.00 m', b: '0.60 m (Base) / 0.40 m (Top)', h: '6.74 m', mat: 'M25 Concrete',
+                est: '2 x 5.00 x ((0.60 + 0.40)/2) x 6.74 = 33.70 m³',
+                target: '-0.1m 0.17m -0.63m', r: '12m',
+                p1: [-0.8, 0, -9.8], p2: [-0.8, 0, 14.8], p3: [0.2, 0, -9.8], p4: [-0.8, 6.74, -9.8]
+            },
+            'RetainingWalls_Left': {
+                n: 'Retaining Walls (Left Side)', l: '50.00 m (Total)', b: '1.60 m (Base) / 0.40 m (Top)', h: '4.00 m', mat: 'M25 Concrete',
+                est: 'DPR segments from Ch. -19m to -5m and Ch. 15m to 53m (Left side)',
+                target: '-0.15m 0.24m -0.5m', r: '25m',
+                p1: [-2.0, 2.74, -15.0], p2: [-2.0, 2.74, -53.0], p3: [-3.6, 2.74, -15.0], p4: [-2.0, 6.74, -15.0]
+            },
+            'RetainingWalls_Right': {
+                n: 'Retaining Walls (Right Side)', l: '50.00 m (Total)', b: '1.60 m (Base) / 0.40 m (Top)', h: '4.00 m', mat: 'M25 Concrete',
+                est: 'DPR segments from Ch. -19m to -5m and Ch. 15m to 53m (Right side)',
+                target: '0.5m 0.24m -0.5m', r: '25m',
+                p1: [9.0, 2.74, -15.0], p2: [9.0, 2.74, -53.0], p3: [10.6, 2.74, -15.0], p4: [9.0, 6.74, -15.0]
+            },
+            'Footings': {
+                n: 'Footings', l: '7.30 m (Abutment) / 5.00 m (Wing)', b: '2.80 m', h: '1.00 m', mat: 'M25 RCC',
+                est: 'Abutment footings: 2 x 7.30 x 2.80 x 1.00 = 40.88 m³',
+                target: '0m -0.03m 0.06m', r: '10m',
+                p1: [-3.8, -1.0, -1.65], p2: [3.8, -1.0, -1.65], p3: [-3.8, -1.0, 4.15], p4: [-3.8, 0, -1.65]
+            },
+            'PCC': {
+                n: 'PCC Foundation Bed', l: '7.60 m (Abutment) / 5.30 m (Wing)', b: '6.30 m / 3.10 m', h: '0.15 m', mat: 'M15 Concrete (1:4:8)',
+                est: 'PCC bed layer below all structural foundations',
+                target: '0m -0.05m 0.06m', r: '10m',
+                p1: [-3.95, -1.15, -1.8], p2: [3.95, -1.15, -1.8], p3: [-3.95, -1.15, 4.5], p4: [-3.95, -1.0, -1.8]
+            },
+            'BedBlocks': {
+                n: 'Bed Blocks', l: '7.00 m', b: '1.00 m', h: '0.30 m', mat: 'M25 Concrete',
+                est: '2 x 7.00 x 1.00 x 0.30 = 4.20 m³',
+                target: '0m 0.29m 0.03m', r: '10m',
+                p1: [-3.5, 5.7, -0.1], p2: [3.5, 5.7, -0.1], p3: [-3.5, 5.7, 1.1], p4: [-3.5, 6.0, -0.1]
+            },
+            'DeckSlab': {
+                n: 'Bridge Deck Slab', l: '11.40 m (Total Span)', b: '7.00 m (Overall Width)', h: '0.74 m', mat: 'M30 RCC',
+                est: '1 x 11.40 x 7.00 x 0.74 = 59.08 m³ (6.00 m roadway)',
+                target: '0m 0.32m -0.25m', r: '15m',
+                p1: [-3.7, 6.74, 0.7], p2: [-3.7, 6.74, -10.7], p3: [3.5, 6.74, 0.7], p4: [-3.7, 6.0, 0.7]
+            },
+            'AsphaltWC': {
+                n: 'Wearing Coat (Roadway)', l: '11.40 m', b: '6.00 m (Roadway Width)', h: '0.075 m (75 mm)', mat: 'Asphalt Concrete',
+                est: '1 x 11.40 x 6.00 x 0.075 = 5.13 m³, Bituminous layer',
+                target: '0m 0.34m -0.25m', r: '15m',
+                p1: [-3.1, 6.81, 0.7], p2: [-3.1, 6.81, -10.7], p3: [2.9, 6.81, 0.7], p4: [-3.1, 6.74, 0.7]
+            },
+            'Backwalls': {
+                n: 'Backwalls / Dirt Walls', l: '7.00 m', b: '0.40 m', h: '1.20 m', mat: 'M25 Concrete',
+                est: '2 x 7.00 x 0.40 x 1.20 = 6.72 m³ behind deck expansion joints',
+                target: '0m 0.32m 0.04m', r: '10m',
+                p1: [-3.6, 6.74, 0.85], p2: [3.6, 6.74, 0.85], p3: [-3.6, 6.74, 1.25], p4: [-3.6, 6.0, 0.85]
+            },
+            'ApproachSlabs': {
+                n: 'Approach Slabs', l: '3.50 m', b: '7.00 m', h: '0.20 m', mat: 'M25 Concrete',
+                est: '2 x 3.50 x 7.00 x 0.20 = 9.80 m³ slab transitions',
+                target: '0m 0.33m 0.13m', r: '12m',
+                p1: [-3.6, 6.74, 0.74], p2: [3.6, 6.74, 0.74], p3: [-3.6, 6.74, 4.24], p4: [-3.6, 6.54, 0.74]
+            },
+            'Handrails': {
+                n: 'Handrails & Posts', l: '11.40 m (Dual side)', b: '0.20 m Posts / 0.10 m Rails', h: '1.00 m Post', mat: 'Precast M25 Concrete',
+                est: '15 posts per side with horizontal concrete pipes',
+                target: '-0.18m 0.36m -0.25m', r: '12m',
+                p1: [-3.6, 6.74, 0.7], p2: [-3.6, 6.74, -10.7], p3: [-3.4, 6.74, 0.7], p4: [-3.6, 7.74, 0.7]
+            },
+            'RCC_Pipe': {
+                n: 'RCC Humepipe Culvert', l: '10.00 m', b: '0.90 m Outer Dia', h: '0.075 m (Wall)', mat: 'RCC NP3 Pipe',
+                est: '1 x 10.00 m culvert Humepipe under approaches',
+                target: '0m -0.13m -0.25m', r: '15m',
+                p1: [-5.0, -2.5, -5.0], p2: [5.0, -2.5, -5.0], p3: [-5.0, -2.5, -5.9], p4: [-5.0, -1.6, -5.0]
+            },
+            'ProtectionWalls': {
+                n: 'Protection Walls / Toe Walls', l: '10.00 m', b: '1.00 m (Base) / 0.40 m (Top)', h: '2.50 m', mat: 'M20 plum concrete',
+                est: 'Toe walls to protect embankment fill from river wash',
+                target: '-0.25m -0.01m 0m', r: '18m',
+                p1: [-5.0, -1.15, 1.05], p2: [5.0, -1.15, 1.05], p3: [-5.0, -1.15, -0.15], p4: [-5.0, 1.35, 1.05]
+            },
+            'GuardStones': {
+                n: 'Guard Stones', l: '0.20 m', b: '0.20 m', h: '1.00 m', mat: 'M25 Concrete',
+                est: '56 precast guard stones along retaining wall copings',
+                target: '-0.2m 0.36m 0.5m', r: '12m',
+                p1: [-3.9, 6.74, 10.0], p2: [-3.7, 6.74, 10.0], p3: [-3.9, 6.74, 9.8], p4: [-3.9, 7.74, 10.0]
+            },
+            'Bearings': {
+                n: 'Bearings', l: '0.30 m', b: '0.30 m', h: '0.05 m (50 mm)', mat: 'Elastomeric Neoprene',
+                est: '6 bearings total (3 per side) resting under deck girder positions',
+                target: '0.08m 0.3m 0.02m', r: '8m',
+                p1: [1.35, 6.0, 0.5], p2: [1.65, 6.0, 0.5], p3: [1.35, 6.0, 0.2], p4: [1.35, 6.05, 0.5]
+            },
+            'EarthFill': {
+                n: 'Approach Road Earth Fill', l: '72.00 m (Total length)', b: '7.00 m', h: '6.74 m max', mat: 'Selected cohesive soil',
+                est: 'Earth fill compacted in 20cm layers behind bridge structures',
+                target: '0m 0.17m 0.5m', r: '25m',
+                p1: [-3.5, 0, 10.0], p2: [3.5, 0, 10.0], p3: [-3.5, 0, 5.0], p4: [-3.5, 6.74, 10.0]
+            }
+        };
+
+        // Ruler is always active — mark the button as permanently active
+        window.toggleMeasurementMode = function() { /* no-op, always on */ };
+        document.getElementById('measToggle').classList.add('active');
+        modelViewer.classList.add('measure-mode-active');
+
+        window.deselectComponent = function() {
+            activeComponentKey = null;
+            document.getElementById('cadHud').style.display = 'none';
+            document.getElementById('dimensionOverlay').style.display = 'none';
+            
+            // Hide 2D dimension badges
+            ['dim-badge-l', 'dim-badge-w', 'dim-badge-h'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.style.display = 'none';
+            });
+            ['hotspot-p1', 'hotspot-p2', 'hotspot-p3', 'hotspot-p4'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.removeAttribute('data-position');
+            });
+            
+            if (modelViewer.model) {
+                modelViewer.model.materials.forEach(m => {
+                    m.setAlphaMode('OPAQUE');
+                    m.pbrMetallicRoughness.setBaseColorFactor([1, 1, 1, 1]);
+                });
+            }
+        };
+
+        modelViewer.addEventListener('click', (event) => {
+            if (!measurementModeActive) return;
+            const material = modelViewer.materialFromPoint(event.clientX, event.clientY);
+            if (material && db[material.name]) {
+                activeComponentKey = material.name;
+                const comp = db[activeComponentKey];
+
+                // Update hotspot positions in 3D space
+                document.getElementById('hotspot-p1').setAttribute('data-position', comp.p1.join(' '));
+                document.getElementById('hotspot-p2').setAttribute('data-position', comp.p2.join(' '));
+                document.getElementById('hotspot-p3').setAttribute('data-position', comp.p3.join(' '));
+                document.getElementById('hotspot-p4').setAttribute('data-position', comp.p4.join(' '));
+
+                // Update 2D dimension badge texts
+                const dimL = document.getElementById('dim-badge-l');
+                const dimW = document.getElementById('dim-badge-w');
+                const dimH = document.getElementById('dim-badge-h');
+                dimL.textContent = 'L: ' + comp.l;
+                dimW.textContent = 'W: ' + comp.b;
+                dimH.textContent = 'H: ' + comp.h;
+
+                // Show 2D dimension badges
+                dimL.style.display = 'block';
+                dimW.style.display = 'block';
+                dimH.style.display = 'block';
+
+                // Smooth camera transition: Target the component center and zoom radius
+                const currentOrbit = modelViewer.getCameraOrbit();
+                modelViewer.cameraTarget = comp.target;
+                modelViewer.cameraOrbit = `${currentOrbit.theta}rad ${currentOrbit.phi}rad ${comp.r}`;
+
+                // Update HUD details
+                document.getElementById('hudName').textContent = comp.n;
+                document.getElementById('hudMat').textContent = comp.mat;
+                document.getElementById('hudEst').textContent = 'DPR Estimate: ' + comp.est;
+                document.getElementById('cadHud').style.display = 'flex';
+
+                // (Vignette disabled — no blur overlay)
+
+                // Ghost out all non-selected meshes completely (soft transparent outline)
+                modelViewer.model.materials.forEach(m => {
+                    if (m.name === material.name) {
+                        m.setAlphaMode('OPAQUE');
+                        m.pbrMetallicRoughness.setBaseColorFactor([1, 1, 1, 1]);
+                    } else {
+                        m.setAlphaMode('BLEND');
+                        m.pbrMetallicRoughness.setBaseColorFactor([1, 1, 1, 0.08]);
+                    }
+                });
+            } else {
+                // If clicked empty space, reset selection
+                deselectComponent();
+            }
+        });
+
+        // ══════════════════════════════════════════════════════════════
+        //  CAD SVG Dimension Lines Engine
+        // ══════════════════════════════════════════════════════════════
+        function initDefs(overlay) {
+            if (overlay.querySelector('defs')) return;
+            const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+            const marker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+            marker.setAttribute('id', 'arr');
+            marker.setAttribute('viewBox', '0 0 10 10');
+            marker.setAttribute('refX', '5');
+            marker.setAttribute('refY', '5');
+            marker.setAttribute('markerWidth', '5');
+            marker.setAttribute('markerHeight', '5');
+            marker.setAttribute('orient', 'auto-start-reverse');
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            path.setAttribute('d', 'M 0 2 L 10 5 L 0 8 z');
+            path.setAttribute('fill', '#60a5fa');
+            marker.appendChild(path);
+            defs.appendChild(marker);
+            overlay.appendChild(defs);
+        }
+
+        function updateDimensions() {
+            try {
+                if (!measurementModeActive || !activeComponentKey) {
+                    document.getElementById('dimensionOverlay').style.display = 'none';
+                    ['dim-badge-l', 'dim-badge-w', 'dim-badge-h'].forEach(id => {
+                        const el = document.getElementById(id);
+                        if (el) el.style.display = 'none';
+                    });
+                    return;
+                }
+                const comp = db[activeComponentKey];
+                if (!comp) return;
+
+                const overlay = document.getElementById('dimensionOverlay');
+                if (!overlay) return;
+                overlay.style.display = 'block';
+
+                // Clear previous lines (keep defs if already initialized)
+                while (overlay.children.length > 0) {
+                    const child = overlay.lastChild;
+                    if (child.nodeType === 1 && child.localName === 'defs') break;
+                    overlay.removeChild(child);
+                }
+
+                const vr = overlay.getBoundingClientRect();
+                const W = vr.width, H = vr.height;
+
+                // Set viewBox to match SVG pixel dimensions exactly
+                overlay.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+
+                // Ensure defs exist (namespace-safe)
+                initDefs(overlay);
+
+                function getScreenPos(id) {
+                    const el = document.getElementById(id);
+                    if (!el) return null;
+                    const r = el.getBoundingClientRect();
+                    return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+                }
+
+                const p1 = getScreenPos('hotspot-p1');
+                const p2 = getScreenPos('hotspot-p2');
+                const p3 = getScreenPos('hotspot-p3');
+                const p4 = getScreenPos('hotspot-p4');
+
+                if (!p1 || !p2 || !p3 || !p4) { console.warn('dim: null hotspot'); return; }
+                const spread = Math.hypot(p2.x-p1.x, p2.y-p1.y) + Math.hypot(p3.x-p1.x, p3.y-p1.y);
+                if (spread < 5) { console.warn('dim: spread too small', spread); return; }
+
+                const OFFSET = 44;
+                const XTICK  = 10;
+
+                function svgEl(tag, attrs) {
+                    const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+                    for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
+                    overlay.appendChild(el);
+                }
+
+                function drawDim(ptA, ptB, badge) {
+                    if (!ptA || !ptB) { badge.style.display = 'none'; return; }
+                    const dx = ptB.x - ptA.x, dy = ptB.y - ptA.y;
+                    const len = Math.hypot(dx, dy);
+                    if (len < 3) { badge.style.display = 'none'; return; }
+
+                    const nx = -dy / len, ny = dx / len;
+                    const cx = (ptA.x + ptB.x) / 2, cy = (ptA.y + ptB.y) / 2;
+                    const pcx = vr.left + W / 2, pcy = vr.top + H / 2;
+                    const sign = (nx * (cx - pcx) + ny * (cy - pcy)) >= 0 ? 1 : -1;
+
+                    const ox = sign * nx * OFFSET, oy = sign * ny * OFFSET;
+                    const ex = sign * nx * (OFFSET + XTICK), ey = sign * ny * (OFFSET + XTICK);
+
+                    svgEl('line', { x1: ptA.x, y1: ptA.y, x2: ptA.x + ex, y2: ptA.y + ey,
+                        stroke: 'rgba(148,163,184,0.5)', 'stroke-width': '1', 'stroke-dasharray': '4 3' });
+                    svgEl('line', { x1: ptB.x, y1: ptB.y, x2: ptB.x + ex, y2: ptB.y + ey,
+                        stroke: 'rgba(148,163,184,0.5)', 'stroke-width': '1', 'stroke-dasharray': '4 3' });
+
+                    svgEl('line', {
+                        x1: ptA.x + ox, y1: ptA.y + oy, x2: ptB.x + ox, y2: ptB.y + oy,
+                        stroke: '#60a5fa', 'stroke-width': '1.5',
+                        'marker-start': 'url(#arr)', 'marker-end': 'url(#arr)'
+                    });
+
+                    badge.style.display = 'block';
+                    badge.style.left = ((ptA.x + ptB.x) / 2 + ox) + 'px';
+                    badge.style.top  = ((ptA.y + ptB.y) / 2 + oy) + 'px';
+                }
+
+                const lL = document.getElementById('dim-badge-l');
+                const lW = document.getElementById('dim-badge-w');
+                const lH = document.getElementById('dim-badge-h');
+
+                drawDim(p1, p2, lL);
+                drawDim(p1, p3, lW);
+                drawDim(p1, p4, lH);
+            } catch (e) {
+                console.warn('updateDimensions error:', e);
+            }
+        }
+
+
+        // Run dimensions update on camera movement
+        modelViewer.addEventListener('camera-change', updateDimensions);
+
+        // Animation frame loop to ensure perfect synchronization during transitions
+        function animLoop() {
+            try {
+                if (measurementModeActive && activeComponentKey) {
+                    updateDimensions();
+                }
+            } catch (e) {
+                console.warn('animLoop error:', e);
+            }
+            requestAnimationFrame(animLoop);
+        }
+        requestAnimationFrame(animLoop);
+    </script>
+
+</body>
+</html>
