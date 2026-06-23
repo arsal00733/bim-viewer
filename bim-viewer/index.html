@@ -1518,6 +1518,8 @@
             const targetParts = targetStr.split(' ').map(s => parseFloat(s));
             const tx = targetParts[0], ty = targetParts[1], tz = targetParts[2];
 
+            console.log('cam target:', tx, ty, tz, 'orbit theta:', orbit.theta, 'phi:', orbit.phi, 'radius:', orbit.radius, 'scale:', scale);
+
             const theta = orbit.theta;
             const phi = orbit.phi;
             const radius = orbit.radius;
@@ -1606,6 +1608,8 @@
             const p2 = project3DTo2D(comp.p2[0], comp.p2[1], comp.p2[2]);
             const p3 = project3DTo2D(comp.p3[0], comp.p3[1], comp.p3[2]);
             const p4 = project3DTo2D(comp.p4[0], comp.p4[1], comp.p4[2]);
+
+            console.log('p1 screen:', p1, 'world:', comp.p1[0], comp.p1[1], comp.p1[2]);
 
             if (!p1 || !p2 || !p3 || !p4) return;
 
