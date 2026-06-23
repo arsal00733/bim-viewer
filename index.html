@@ -289,6 +289,161 @@
             }
         }
 
+        /* Measurements Toggle & Card Styles */
+        .measurements-toggle {
+            position: absolute;
+            top: 24px;
+            right: 180px;
+            background: rgba(248, 250, 252, 0.95);
+            backdrop-filter: blur(8px);
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            padding: 8px 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #334155;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            z-index: 100;
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+        .measurements-toggle:hover {
+            background: #ffffff;
+            border-color: #0078f5;
+            color: #0078f5;
+        }
+        .measurements-toggle.active {
+            background: #0078f5;
+            color: #ffffff;
+            border-color: #0078f5;
+        }
+        .measurements-toggle .toggle-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #94a3b8;
+            transition: background-color 0.2s;
+        }
+        .measurements-toggle.active .toggle-dot {
+            background: #4ade80;
+            box-shadow: 0 0 8px #4ade80;
+        }
+
+        .measurement-card {
+            position: absolute;
+            bottom: 110px;
+            right: 24px;
+            width: 290px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(8px);
+            border: 1px solid #cbd5e1;
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            z-index: 100;
+            display: none;
+            flex-direction: column;
+            animation: slideUp 0.3s ease-out;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(10px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .measurement-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 8px;
+        }
+
+        .measurement-card-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #1e293b;
+        }
+
+        .measurement-card-close {
+            cursor: pointer;
+            color: #94a3b8;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.2s;
+        }
+
+        .measurement-card-close:hover {
+            color: #475569;
+        }
+
+        .measurement-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .measurement-val-box {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 8px;
+            text-align: center;
+        }
+
+        .measurement-val-label {
+            font-size: 9px;
+            font-weight: 700;
+            color: #64748b;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+
+        .measurement-val-num {
+            font-size: 11px;
+            font-weight: 700;
+            color: #0078f5;
+            word-break: break-word;
+        }
+
+        .measurement-extra-info {
+            font-size: 11px;
+            color: #15803d;
+            line-height: 1.4;
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            border-radius: 6px;
+            padding: 8px;
+            margin-top: 4px;
+        }
+
+        model-viewer.measure-mode-active {
+            cursor: crosshair !important;
+        }
+
+        @media (max-width: 768px) {
+            .measurements-toggle {
+                top: 24px;
+                left: 124px;
+                right: auto;
+                font-size: 11px;
+                padding: 6px 12px;
+            }
+            .measurement-card {
+                bottom: 100px;
+                left: 16px;
+                right: 16px;
+                width: auto;
+            }
+        }
+
         /* 3D View Cube Styles - Revit UI Theme */
         :root {
             --cube-size: 68px;
@@ -565,7 +720,7 @@
 <body>
 
     <model-viewer 
-        src="./bridge_model.glb?v=4" 
+        src="./bridge_model.glb?v=5" 
         camera-controls 
         interaction-prompt="auto" 
         shadow-intensity="1.5" 
@@ -683,6 +838,53 @@
         </div>
     </div>
 
+    <!-- Measurements Toggle Button -->
+    <div class="measurements-toggle" id="measToggle" onclick="toggleMeasurementMode()">
+        <span class="toggle-dot"></span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;">
+            <rect x="2" y="7" width="20" height="10" rx="2" ry="2"></rect>
+            <line x1="6" y1="7" x2="6" y2="12"></line>
+            <line x1="10" y1="7" x2="10" y2="10"></line>
+            <line x1="14" y1="7" x2="14" y2="12"></line>
+            <line x1="18" y1="7" x2="18" y2="10"></line>
+        </svg>
+        <span>Ruler / Measurements</span>
+    </div>
+
+    <!-- Measurement Info Card -->
+    <div class="measurement-card" id="measCard">
+        <div class="measurement-card-header">
+            <div class="measurement-card-title" id="measCompName">Component Name</div>
+            <div class="measurement-card-close" onclick="deselectComponent()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </div>
+        </div>
+        <div class="measurement-grid">
+            <div class="measurement-val-box">
+                <div class="measurement-val-label">Length</div>
+                <div class="measurement-val-num" id="measLength">-</div>
+            </div>
+            <div class="measurement-val-box">
+                <div class="measurement-val-label">Width</div>
+                <div class="measurement-val-num" id="measBreadth">-</div>
+            </div>
+            <div class="measurement-val-box">
+                <div class="measurement-val-label">Height</div>
+                <div class="measurement-val-num" id="measHeight">-</div>
+            </div>
+        </div>
+        <div class="measurement-val-box" style="text-align: left; margin-bottom: 8px; padding: 6px 10px;">
+            <div class="measurement-val-label" style="margin-bottom: 2px;">Material / Specifications</div>
+            <div class="measurement-val-num" id="measMaterial" style="color: #334155; font-size: 11px; font-weight: 600;">-</div>
+        </div>
+        <div class="measurement-extra-info" id="measEstimate">
+            DPR Estimate: -
+        </div>
+    </div>
+
     <script>
         const modelViewer = document.querySelector('model-viewer');
         const viewCube = document.getElementById('viewCube');
@@ -756,6 +958,139 @@
             
             // Spin compass ring horizontally
             compassRing.style.transform = `rotateX(65deg) rotateZ(${-thetaDeg}deg)`;
+        });
+
+        // ═══════════════════════════════════════════════════════════════
+        //  Measurements / Ruler Mode Interactive Logic
+        // ═══════════════════════════════════════════════════════════════
+        [ignoring loop detection]
+        let measurementModeActive = false;
+
+        const db = {
+            'Abutment_Left': {
+                n: 'Abutment (Left Side)', l: '7.30 m', b: '2.50 m (Base) / 1.00 m (Top)', h: '5.70 m', mat: 'M25 Concrete',
+                est: '1 x 7.30 x ((2.50+1.00)/2) x 5.70 = 72.82 m³'
+            },
+            'Abutment_Right': {
+                n: 'Abutment (Right Side)', l: '7.30 m', b: '2.50 m (Base) / 1.00 m (Top)', h: '5.70 m', mat: 'M25 Concrete',
+                est: '1 x 7.30 x ((2.50+1.00)/2) x 5.70 = 72.82 m³'
+            },
+            'WingWalls_Left': {
+                n: 'Wing Walls (Left Side)', l: '5.00 m', b: '0.60 m (Base) / 0.40 m (Top)', h: '6.74 m', mat: 'M25 Concrete',
+                est: '2 x 5.00 x ((0.60+0.40)/2) x 6.74 = 33.70 m³'
+            },
+            'WingWalls_Right': {
+                n: 'Wing Walls (Right Side)', l: '5.00 m', b: '0.60 m (Base) / 0.40 m (Top)', h: '6.74 m', mat: 'M25 Concrete',
+                est: '2 x 5.00 x ((0.60+0.40)/2) x 6.74 = 33.70 m³'
+            },
+            'RetainingWalls_Left': {
+                n: 'Retaining Walls (Left Side)', l: '50.00 m (Total)', b: '1.60 m (Base) / 0.40 m (Top)', h: '4.00 m', mat: 'M25 Concrete',
+                est: 'Detailed estimate per retaining wall segments (Left side)'
+            },
+            'RetainingWalls_Right': {
+                n: 'Retaining Walls (Right Side)', l: '50.00 m (Total)', b: '1.60 m (Base) / 0.40 m (Top)', h: '4.00 m', mat: 'M25 Concrete',
+                est: 'Detailed estimate per retaining wall segments (Right side)'
+            },
+            'Footings': {
+                n: 'Footings', l: '7.30 m (Abutment) / 5.00 m (Wing)', b: '2.80 m', h: '1.00 m', mat: 'M25 RCC',
+                est: 'Abutment footings: 2 x 7.30 x 2.80 x 1.00 = 40.88 m³'
+            },
+            'PCC': {
+                n: 'PCC Foundation Bed', l: '7.60 m (Abutment) / 5.30 m (Wing)', b: '6.30 m / 3.10 m', h: '0.15 m', mat: 'M15 Concrete (1:4:8)',
+                est: 'PCC bed layer below all structural foundations'
+            },
+            'BedBlocks': {
+                n: 'Bed Blocks', l: '7.00 m', b: '1.00 m', h: '0.30 m', mat: 'M25 Concrete',
+                est: '2 x 7.00 x 1.00 x 0.30 = 4.20 m³'
+            },
+            'DeckSlab': {
+                n: 'Bridge Deck Slab', l: '11.40 m (Total Span)', b: '7.00 m (Overall Width)', h: '0.74 m', mat: 'M30 RCC',
+                est: '1 x 11.40 x 7.00 x 0.74 = 59.08 m³ (6.00 m roadway)'
+            },
+            'AsphaltWC': {
+                n: 'Wearing Coat (Roadway)', l: '11.40 m', b: '6.00 m (Roadway Width)', h: '0.075 m (75 mm)', mat: 'Asphalt Concrete',
+                est: '1 x 11.40 x 6.00 x 0.075 = 5.13 m³'
+            },
+            'Backwalls': {
+                n: 'Backwalls / Dirt Walls', l: '7.00 m', b: '0.40 m', h: '1.20 m', mat: 'M25 Concrete',
+                est: '2 x 7.00 x 0.40 x 1.20 = 6.72 m³ behind deck expansion joints'
+            },
+            'ApproachSlabs': {
+                n: 'Approach Slabs', l: '3.50 m', b: '7.00 m', h: '0.20 m', mat: 'M25 Concrete',
+                est: '2 x 3.50 x 7.00 x 0.20 = 9.80 m³ slab transitions'
+            },
+            'Handrails': {
+                n: 'Handrails & Posts', l: '11.40 m (Dual side)', b: '0.20 m Posts / 0.10 m Rails', h: '1.00 m Post', mat: 'Precast M25 Concrete',
+                est: '15 posts per side with horizontal concrete pipes'
+            },
+            'RCC_Pipe': {
+                n: 'RCC Humepipe Culvert', l: '10.00 m', b: '0.90 m Outer Dia', h: '0.075 m (Wall)', mat: 'RCC NP3 Pipe',
+                est: '1 x 10.00 m culvert Humepipe under approaches'
+            },
+            'ProtectionWalls': {
+                n: 'Protection Walls / Toe Walls', l: '10.00 m', b: '1.00 m (Base) / 0.40 m (Top)', h: '2.50 m', mat: 'M20 plum concrete',
+                est: 'Toe walls to protect embankment fill from river wash'
+            },
+            'GuardStones': {
+                n: 'Guard Stones', l: '0.20 m', b: '0.20 m', h: '1.00 m', mat: 'M25 Concrete',
+                est: '56 precast guard stones along retaining wall copings'
+            },
+            'Bearings': {
+                n: 'Bearings', l: '0.30 m', b: '0.30 m', h: '0.05 m (50 mm)', mat: 'Elastomeric Neoprene',
+                est: '6 bearings total (3 per side) resting under deck girder positions'
+            },
+            'EarthFill': {
+                n: 'Approach Road Earth Fill', l: '72.00 m (Total length)', b: '7.00 m', h: '6.74 m max', mat: 'Selected cohesive soil',
+                est: 'Earth fill compacted in 20cm layers behind bridge structures'
+            }
+        };
+
+        window.toggleMeasurementMode = function() {
+            measurementModeActive = !measurementModeActive;
+            const toggleBtn = document.getElementById('measToggle');
+            if (measurementModeActive) {
+                toggleBtn.classList.add('active');
+                modelViewer.classList.add('measure-mode-active');
+            } else {
+                toggleBtn.classList.remove('active');
+                modelViewer.classList.remove('measure-mode-active');
+                deselectComponent();
+            }
+        };
+
+        window.deselectComponent = function() {
+            document.getElementById('measCard').style.display = 'none';
+            if (modelViewer.model) {
+                modelViewer.model.materials.forEach(m => {
+                    m.pbrMetallicRoughness.setBaseColorFactor([1, 1, 1, 1]);
+                });
+            }
+        };
+
+        modelViewer.addEventListener('click', (event) => {
+            if (!measurementModeActive) return;
+            const material = modelViewer.materialFromPoint(event.clientX, event.clientY);
+            if (material && db[material.name]) {
+                const comp = db[material.name];
+                document.getElementById('measCompName').textContent = comp.n;
+                document.getElementById('measLength').textContent = comp.l;
+                document.getElementById('measBreadth').textContent = comp.b;
+                document.getElementById('measHeight').textContent = comp.h;
+                document.getElementById('measMaterial').textContent = comp.mat;
+                document.getElementById('measEstimate').textContent = 'DPR Estimate: ' + comp.est;
+                document.getElementById('measCard').style.display = 'flex';
+
+                // Fade other components
+                modelViewer.model.materials.forEach(m => {
+                    if (m.name === material.name) {
+                        m.pbrMetallicRoughness.setBaseColorFactor([1, 1, 1, 1]);
+                    } else {
+                        m.pbrMetallicRoughness.setBaseColorFactor([1, 1, 1, 0.15]);
+                    }
+                });
+            } else {
+                deselectComponent();
+            }
         });
     </script>
 
