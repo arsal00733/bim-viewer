@@ -465,10 +465,24 @@ for meshes, name in groups:
     if valid:
         merged = trimesh.util.concatenate(valid)
         merged.apply_transform(z_to_y_up)
-        # Assign a named PBRMaterial to ensure material names in glTF match component names
+        # PBR parameters per component type
+        if any(kw in name for kw in ['Steel', 'Bearings', 'Handrail']):
+            rough, metal = 0.35, 0.85
+        elif any(kw in name for kw in ['Asphalt', 'WC']):
+            rough, metal = 0.95, 0.0
+        elif any(kw in name for kw in ['Earth']):
+            rough, metal = 1.0, 0.0
+        elif any(kw in name for kw in ['Deck', 'Slab']):
+            rough, metal = 0.85, 0.0
+        elif any(kw in name for kw in ['Pipe', 'Drainage']):
+            rough, metal = 0.5, 0.6
+        else:
+            rough, metal = 0.9, 0.0   # default concrete
         merged.visual.material = trimesh.visual.material.PBRMaterial(
             name=name,
-            baseColorFactor=[255, 255, 255, 255]
+            baseColorFactor=[255, 255, 255, 255],
+            roughnessFactor=rough,
+            metallicFactor=metal
         )
         scene.add_geometry(merged, node_name=name)
         stats.append(f"  {name}: {len(merged.vertices):,} verts, {len(merged.faces):,} faces")
