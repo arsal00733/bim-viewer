@@ -1430,9 +1430,9 @@
                 const p3 = getScreenPos('hotspot-p3');
                 const p4 = getScreenPos('hotspot-p4');
 
-                if (!p1 || !p2 || !p3 || !p4) { console.warn('dim: null hotspot'); return; }
+                if (!p1 || !p2 || !p3 || !p4) return;
                 const spread = Math.hypot(p2.x-p1.x, p2.y-p1.y) + Math.hypot(p3.x-p1.x, p3.y-p1.y);
-                if (spread < 5) { console.warn('dim: spread too small', spread); return; }
+                if (spread < 5) return;
 
                 const OFFSET = 44;
                 const XTICK  = 10;
@@ -1487,7 +1487,9 @@
 
 
         // Run dimensions update on camera movement
-        modelViewer.addEventListener('camera-change', updateDimensions);
+        modelViewer.addEventListener('camera-change', () => {
+            if (measurementModeActive && activeComponentKey) updateDimensions();
+        });
 
         // Animation frame loop to ensure perfect synchronization during transitions
         function animLoop() {
