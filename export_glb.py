@@ -12,16 +12,16 @@ import trimesh
 import os
 
 MATERIALS = {
-    "concrete_a":  (135, 135, 130, 255),  # #878782 weathered industrial concrete
+    "concrete_a":  (135, 135, 130, 255),  # #878782 medium weathered concrete
     "concrete_b":  (125, 125, 120, 255),  # #7D7D78 slightly darker layer
-    "pcc":         ( 80,  80,  78, 255),  # #50504E lean PCC
-    "footing":     (100, 100,  95, 255),  # #64645F footings
-    "bedblock":    (135, 135, 130, 255),  # #878782 precast bed block
-    "deck":        (115, 115, 110, 255),  # #73736E deck slab
-    "earth":       (170, 130, 100, 255),  # #AA8264 earth fill (keep)
-    "steel":       ( 60,  65,  70, 255),  # #3C4146 steel bearings
-    "asphalt":     ( 45,  45,  48, 255),  # #2D2D30 asphalt road
-    "handrail":    (165, 165, 160, 255),  # #A5A5A0 handrails
+    "pcc":         ( 85,  85,  82, 255),  # #555552 dark lean concrete
+    "footing":     (105, 105, 100, 255),  # #696964 dense below-grade concrete
+    "bedblock":    (145, 145, 140, 255),  # #91918C slightly lighter precast
+    "deck":        (120, 120, 115, 255),  # #787873 deck slab
+    "earth":       (125,  85,  50, 255),  # #7D5532 Kerala laterite soil
+    "steel":       ( 60,  65,  70, 255),  # #3C4146 structural steel
+    "asphalt":     ( 45,  45,  48, 255),  # #2D2D30 dark wearing coat
+    "handrail":    (165, 165, 160, 255),  # #A5A5A0 galvanized steel
     "misc":        ( 80,  80,  82, 200),  # dark grey misc
 }
 
