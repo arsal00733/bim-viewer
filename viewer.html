@@ -1153,6 +1153,7 @@
 
     <!-- SVG overlay for CAD dimension lines -->
     <svg id="dimensionOverlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9999; display: none; overflow: visible;"></svg>
+    <svg id="zoomOverlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9998; display: none; overflow: visible;"></svg>
 
     <!-- Presentation Vignette Blur -->
     <div id="vignetteOverlay"></div>
@@ -1928,6 +1929,110 @@
             updateStageVisibility();
             updateStageInfo();
         };
+
+        // ══════════════════════════════════════════════════════════
+        //  Zoom-aware dimension overlay
+        // ══════════════════════════════════════════════════════════
+        let defaultCamRadius = null;
+        let zoomDimTimer = null;
+
+        function updateZoomDimensions() {
+            const overlay = document.getElementById('zoomOverlay');
+            if (!overlay || !modelViewer.model) return;
+
+            const orbit = modelViewer.getCameraOrbit();
+            const radius = orbit.radius;
+            if (defaultCamRadius === null) defaultCamRadius = radius;
+            const threshold = defaultCamRadius * 0.35;
+
+            if (radius > threshold || activeComponentKey) {
+                overlay.style.display = 'none';
+                return;
+            }
+
+            const W = window.innerWidth, H = window.innerHeight;
+            overlay.style.display = 'block';
+            overlay.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+            overlay.innerHTML = '';
+            initSVGDefs(overlay);
+
+            // Project each component center → check viewport visibility
+            const visible = [];
+            for (const [key, comp] of Object.entries(db)) {
+                const cx = (comp.p1[0] + comp.p2[0] + comp.p3[0] + comp.p4[0]) / 4;
+                const cy = (comp.p1[1] + comp.p2[1] + comp.p3[1] + comp.p4[1]) / 4;
+                const cz = (comp.p1[2] + comp.p2[2] + comp.p3[2] + comp.p4[2]) / 4;
+                const sp = project3DTo2D(cx, cy, cz);
+                if (sp && sp.x > -50 && sp.x < W + 50 && sp.y > -50 && sp.y < H + 50) {
+                    visible.push({ key, comp, cx, cy, cz, sp });
+                }
+            }
+
+            if (visible.length < 2) { overlay.style.display = 'none'; return; }
+
+            // Draw distance lines between components that are close in 3D
+            for (let i = 0; i < visible.length; i++) {
+                for (let j = i + 1; j < visible.length; j++) {
+                    const dx = visible[i].cx - visible[j].cx;
+                    const dy = visible[i].cy - visible[j].cy;
+                    const dz = visible[i].cz - visible[j].cz;
+                    const d3 = Math.sqrt(dx*dx + dy*dy + dz*dz);
+                    if (d3 > 8) continue; // skip far-apart pairs
+                    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    svg.setAttribute('x1', visible[i].sp.x);
+                    svg.setAttribute('y1', visible[i].sp.y);
+                    svg.setAttribute('x2', visible[j].sp.x);
+                    svg.setAttribute('y2', visible[j].sp.y);
+                    svg.setAttribute('stroke', 'rgba(96,165,250,0.5)');
+                    svg.setAttribute('stroke-width', '1.2');
+                    svg.setAttribute('stroke-dasharray', '3,3');
+                    overlay.appendChild(svg);
+
+                    const mx = (visible[i].sp.x + visible[j].sp.x) / 2;
+                    const my = (visible[i].sp.y + visible[j].sp.y) / 2;
+                    const tx = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                    tx.setAttribute('x', mx);
+                    tx.setAttribute('y', my - 4);
+                    tx.setAttribute('fill', '#60a5fa');
+                    tx.setAttribute('font-size', '9');
+                    tx.setAttribute('font-family', 'monospace');
+                    tx.setAttribute('text-anchor', 'middle');
+                    tx.setAttribute('stroke', '#0b1120');
+                    tx.setAttribute('stroke-width', '0.3');
+                    tx.textContent = d3.toFixed(2) + 'm';
+                    overlay.appendChild(tx);
+                }
+            }
+
+            // Component labels + center dots
+            for (const v of visible) {
+                const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                dot.setAttribute('cx', v.sp.x);
+                dot.setAttribute('cy', v.sp.y);
+                dot.setAttribute('r', '2.5');
+                dot.setAttribute('fill', '#3b82f6');
+                overlay.appendChild(dot);
+
+                const lb = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                lb.setAttribute('x', v.sp.x);
+                lb.setAttribute('y', v.sp.y - 8);
+                lb.setAttribute('fill', '#f1f5f9');
+                lb.setAttribute('font-size', '9');
+                lb.setAttribute('font-family', 'sans-serif');
+                lb.setAttribute('text-anchor', 'middle');
+                lb.setAttribute('stroke', '#0b1120');
+                lb.setAttribute('stroke-width', '0.4');
+                const short = (v.comp.n || v.key).replace(/\(.*\)/, '').trim();
+                lb.textContent = short.length > 20 ? short.slice(0, 18) + '…' : short;
+                overlay.appendChild(lb);
+            }
+        }
+
+        // Debounced camera-change handler
+        modelViewer.addEventListener('camera-change', () => {
+            if (zoomDimTimer) cancelAnimationFrame(zoomDimTimer);
+            zoomDimTimer = requestAnimationFrame(updateZoomDimensions);
+        });
     })();</script>
 
     <!-- WBS Timeline Bar -->
