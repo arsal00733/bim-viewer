@@ -480,7 +480,7 @@ for s in stats:
 # Export
 out_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "bim-viewer")
 os.makedirs(out_dir, exist_ok=True)
-out_path = os.path.join(out_dir, "bridge_model.glb")
+out_path = os.path.join(out_dir, "bridge_model_v2.glb")
 
 scene.export(out_path, file_type="glb")
 file_size = os.path.getsize(out_path) / (1024 * 1024)
