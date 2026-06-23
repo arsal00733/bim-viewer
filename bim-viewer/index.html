@@ -1494,8 +1494,17 @@
         }
 
         // ── Project a 3D world point to 2D screen coordinates ──
-        let _projCache = { viewProj: null, vr: null, fov: 0 };
+        // The model-viewer applies scale="0.05 0.05 0.05" to the model,
+        // so we must scale world coords to match the camera's space.
+        function getModelScale() {
+            const s = modelViewer.getAttribute('scale');
+            if (s) { const p = s.split(' ').map(parseFloat); return p[0] || 1; }
+            return 1;
+        }
         function project3DTo2D(wx, wy, wz) {
+            const scale = getModelScale();
+            wx *= scale; wy *= scale; wz *= scale;
+
             const orbit = modelViewer.getCameraOrbit();
             const targetStr = modelViewer.cameraTarget;
             const targetParts = targetStr.split(' ').map(s => parseFloat(s));
