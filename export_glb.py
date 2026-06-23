@@ -516,6 +516,20 @@ groups = [
 # Z-up → Y-up rotation (-90° around X axis)
 z_to_y_up = trimesh.transformations.rotation_matrix(-np.pi / 2, [1, 0, 0])
 
+# Map node name patterns to MATERIALS keys for baseColorFactor
+name_to_mat = {
+    'PCC': 'pcc', 'Footings': 'footing',
+    'Abutment': 'concrete_a', 'WingWall': 'concrete_a',
+    'Backwall': 'concrete_a', 'Approach': 'concrete_a',
+    'Protection': 'concrete_a', 'Retaining': 'concrete_a',
+    'BedBlock': 'bedblock', 'Deck': 'deck',
+    'Asphalt': 'asphalt', 'Earth': 'earth',
+    'Bearing': 'steel', 'Handrail': 'handrail',
+    'NameBoard': 'bedblock', 'Drainage': 'misc',
+    'GuardStone': 'bedblock', 'RCC': 'footing',
+    'Expansion': 'misc',
+}
+
 scene = trimesh.Scene()
 stats = []
 for meshes, name in groups:
@@ -523,6 +537,10 @@ for meshes, name in groups:
     if valid:
         merged = trimesh.util.concatenate(valid)
         merged = flat_shade(merged)
+        # Reset vertex colors to white (identity), then apply crease+noise as multipliers
+        nv = len(merged.vertices)
+        white_vc = np.full((nv, 4), 255, dtype=np.uint8)
+        merged.visual = trimesh.visual.ColorVisuals(mesh=merged, vertex_colors=white_vc)
         merged = darken_creases(merged, strength=0.2)
         merged = add_concrete_noise(merged, intensity=5)
         merged.apply_transform(z_to_y_up)
@@ -549,17 +567,16 @@ for meshes, name in groups:
             rough, metal = 0.5, 0.3
         else:
             rough, metal = 0.65, 0.0   # default concrete
-        # Preserve vertex colours when setting PBR material (avoid discarding ColorVisuals)
-        vc = merged.visual.vertex_colors.copy() if (hasattr(merged.visual, 'vertex_colors') and len(merged.visual.vertex_colors) > 0) else None
-        merged.visual = trimesh.visual.MaterialVisuals(
-            mesh=merged,
-            material=trimesh.visual.material.PBRMaterial(
-                name=name,
-                baseColorFactor=[1.0, 1.0, 1.0, 1.0],
-                roughnessFactor=rough,
-                metallicFactor=metal
-            ),
-            vertex_colors=vc
+        # Look up material key and compute baseColorFactor in [0,1] range
+        mat_key = next((v for k, v in name_to_mat.items() if k in name), 'concrete_a')
+        mr, mg, mb, ma = MATERIALS[mat_key]
+        bcf = [mr / 255.0, mg / 255.0, mb / 255.0, ma / 255.0]
+        # Set PBR material (trimesh preserves ColorVisuals when setting .material)
+        merged.visual.material = trimesh.visual.material.PBRMaterial(
+            name=name,
+            baseColorFactor=bcf,
+            roughnessFactor=rough,
+            metallicFactor=metal
         )
         scene.add_geometry(merged, node_name=name)
         stats.append(f"  {name}: {len(merged.vertices):,} verts, {len(merged.faces):,} faces")
