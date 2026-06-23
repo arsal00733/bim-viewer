@@ -289,6 +289,100 @@
             }
         }
 
+        /* Dimensioning Hotspots and CAD HUD Styles */
+        #hotspot-p1, #hotspot-p2, #hotspot-p3, #hotspot-p4 {
+            display: block !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+            width: 1px !important;
+            height: 1px !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            border: none !important;
+        }
+
+        #cadHud {
+            position: absolute;
+            bottom: 24px;
+            left: 24px;
+            background: rgba(15, 23, 42, 0.92);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            padding: 14px 18px;
+            color: #f8fafc;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            font-size: 11px;
+            z-index: 100;
+            display: none;
+            flex-direction: column;
+            gap: 6px;
+            width: 320px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.4);
+            transition: all 0.3s ease;
+            animation: slideUp 0.3s ease-out;
+        }
+
+        #cadHud .hud-header {
+            font-size: 13px;
+            font-weight: 800;
+            color: #38bdf8;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 6px;
+            margin-bottom: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        #cadHud .hud-close {
+            cursor: pointer;
+            color: #94a3b8;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.2s;
+        }
+
+        #cadHud .hud-close:hover {
+            color: #f8fafc;
+        }
+
+        #cadHud .hud-row {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        #cadHud .hud-row span:first-child {
+            color: #94a3b8;
+            font-weight: 600;
+        }
+
+        #cadHud .hud-row span:last-child {
+            color: #f8fafc;
+            font-weight: 700;
+        }
+
+        #cadHud .hud-estimate {
+            background: rgba(74, 222, 128, 0.1);
+            border: 1px solid rgba(74, 222, 128, 0.25);
+            border-radius: 6px;
+            padding: 8px;
+            color: #4ade80;
+            margin-top: 4px;
+            font-size: 10.5px;
+            line-height: 1.4;
+        }
+
+        @media (max-width: 768px) {
+            #cadHud {
+                bottom: 80px;
+                left: 16px;
+                right: 16px;
+                width: auto;
+            }
+        }
+
         /* Measurements Toggle & Card Styles */
         .measurements-toggle {
             position: absolute;
@@ -751,7 +845,16 @@
             <div class="loader"></div>
             <div class="loading-text">Loading 3D BIM Model...</div>
         </div>
+
+        <!-- Hotspots for CAD-style dimensioning -->
+        <div slot="hotspot-p1" id="hotspot-p1"></div>
+        <div slot="hotspot-p2" id="hotspot-p2"></div>
+        <div slot="hotspot-p3" id="hotspot-p3"></div>
+        <div slot="hotspot-p4" id="hotspot-p4"></div>
     </model-viewer>
+
+    <!-- SVG overlay for CAD dimension lines -->
+    <svg id="dimensionOverlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 99; display: none;"></svg>
 
     <!-- Revit-style 3D View Cube Container -->
     <div class="view-cube-container">
@@ -851,36 +954,22 @@
         <span>Ruler / Measurements</span>
     </div>
 
-    <!-- Measurement Info Card -->
-    <div class="measurement-card" id="measCard">
-        <div class="measurement-card-header">
-            <div class="measurement-card-title" id="measCompName">Component Name</div>
-            <div class="measurement-card-close" onclick="deselectComponent()">
+    <!-- CAD HUD for Details -->
+    <div id="cadHud">
+        <div class="hud-header">
+            <span id="hudName">Component Name</span>
+            <div class="hud-close" onclick="deselectComponent()">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <line x1="18" y1="6" x2="6" y2="18"></line>
                     <line x1="6" y1="6" x2="18" y2="18"></line>
                 </svg>
             </div>
         </div>
-        <div class="measurement-grid">
-            <div class="measurement-val-box">
-                <div class="measurement-val-label">Length</div>
-                <div class="measurement-val-num" id="measLength">-</div>
-            </div>
-            <div class="measurement-val-box">
-                <div class="measurement-val-label">Width</div>
-                <div class="measurement-val-num" id="measBreadth">-</div>
-            </div>
-            <div class="measurement-val-box">
-                <div class="measurement-val-label">Height</div>
-                <div class="measurement-val-num" id="measHeight">-</div>
-            </div>
+        <div class="hud-row">
+            <span>Material:</span>
+            <span id="hudMat">-</span>
         </div>
-        <div class="measurement-val-box" style="text-align: left; margin-bottom: 8px; padding: 6px 10px;">
-            <div class="measurement-val-label" style="margin-bottom: 2px;">Material / Specifications</div>
-            <div class="measurement-val-num" id="measMaterial" style="color: #334155; font-size: 11px; font-weight: 600;">-</div>
-        </div>
-        <div class="measurement-extra-info" id="measEstimate">
+        <div class="hud-estimate" id="hudEst">
             DPR Estimate: -
         </div>
     </div>
@@ -960,87 +1049,127 @@
             compassRing.style.transform = `rotateX(65deg) rotateZ(${-thetaDeg}deg)`;
         });
 
+        // ═════════════════════════════════════════════════════════════�        // ═══════════════════════════════════════════════════════════════
+        //  Measurements / CAD-Style 3D Ruler Mode
         // ═══════════════════════════════════════════════════════════════
-        //  Measurements / Ruler Mode Interactive Logic
-        // ═══════════════════════════════════════════════════════════════
+        [ignoring loop detection]
         let measurementModeActive = false;
+        let activeComponentKey = null;
 
         const db = {
             'Abutment_Left': {
                 n: 'Abutment (Left Side)', l: '7.30 m', b: '2.50 m (Base) / 1.00 m (Top)', h: '5.70 m', mat: 'M25 Concrete',
-                est: '1 x 7.30 x ((2.50+1.00)/2) x 5.70 = 72.82 m³'
+                est: '1 x 7.30 x ((2.50 + 1.00)/2) x 5.70 = 72.82 m³',
+                target: [0, 2.85, -1.25], r: '12m',
+                p1: [-3.85, 0, 0.1], p2: [3.85, 0, 0.1], p3: [-3.85, 0, -2.6], p4: [-3.85, 5.7, 0.1]
             },
             'Abutment_Right': {
                 n: 'Abutment (Right Side)', l: '7.30 m', b: '2.50 m (Base) / 1.00 m (Top)', h: '5.70 m', mat: 'M25 Concrete',
-                est: '1 x 7.30 x ((2.50+1.00)/2) x 5.70 = 72.82 m³'
+                est: '1 x 7.30 x ((2.50 + 1.00)/2) x 5.70 = 72.82 m³',
+                target: [0, 2.85, 11.25], r: '12m',
+                p1: [-3.85, 0, 9.9], p2: [3.85, 0, 9.9], p3: [-3.85, 0, 12.6], p4: [-3.85, 5.7, 9.9]
             },
             'WingWalls_Left': {
                 n: 'Wing Walls (Left Side)', l: '5.00 m', b: '0.60 m (Base) / 0.40 m (Top)', h: '6.74 m', mat: 'M25 Concrete',
-                est: '2 x 5.00 x ((0.60+0.40)/2) x 6.74 = 33.70 m³'
+                est: '2 x 5.00 x ((0.60 + 0.40)/2) x 6.74 = 33.70 m³',
+                target: [-2.0, 3.37, -2.5], r: '12m',
+                p1: [-0.8, 0, 0.2], p2: [-0.8, 0, -5.2], p3: [0.2, 0, 0.2], p4: [-0.8, 6.74, 0.2]
             },
             'WingWalls_Right': {
                 n: 'Wing Walls (Right Side)', l: '5.00 m', b: '0.60 m (Base) / 0.40 m (Top)', h: '6.74 m', mat: 'M25 Concrete',
-                est: '2 x 5.00 x ((0.60+0.40)/2) x 6.74 = 33.70 m³'
+                est: '2 x 5.00 x ((0.60 + 0.40)/2) x 6.74 = 33.70 m³',
+                target: [-2.0, 3.37, 12.5], r: '12m',
+                p1: [-0.8, 0, 9.8], p2: [-0.8, 0, 14.8], p3: [0.2, 0, 9.8], p4: [-0.8, 6.74, 9.8]
             },
             'RetainingWalls_Left': {
                 n: 'Retaining Walls (Left Side)', l: '50.00 m (Total)', b: '1.60 m (Base) / 0.40 m (Top)', h: '4.00 m', mat: 'M25 Concrete',
-                est: 'Detailed estimate per retaining wall segments (Left side)'
+                est: 'DPR segments from Ch. -19m to -5m and Ch. 15m to 53m (Left side)',
+                target: [-3.0, 4.74, 10.0], r: '25m',
+                p1: [-2.0, 2.74, 15.0], p2: [-2.0, 2.74, 53.0], p3: [-3.6, 2.74, 15.0], p4: [-2.0, 6.74, 15.0]
             },
             'RetainingWalls_Right': {
                 n: 'Retaining Walls (Right Side)', l: '50.00 m (Total)', b: '1.60 m (Base) / 0.40 m (Top)', h: '4.00 m', mat: 'M25 Concrete',
-                est: 'Detailed estimate per retaining wall segments (Right side)'
+                est: 'DPR segments from Ch. -19m to -5m and Ch. 15m to 53m (Right side)',
+                target: [10.0, 4.74, 10.0], r: '25m',
+                p1: [9.0, 2.74, 15.0], p2: [9.0, 2.74, 53.0], p3: [10.6, 2.74, 15.0], p4: [9.0, 6.74, 15.0]
             },
             'Footings': {
                 n: 'Footings', l: '7.30 m (Abutment) / 5.00 m (Wing)', b: '2.80 m', h: '1.00 m', mat: 'M25 RCC',
-                est: 'Abutment footings: 2 x 7.30 x 2.80 x 1.00 = 40.88 m³'
+                est: 'Abutment footings: 2 x 7.30 x 2.80 x 1.00 = 40.88 m³',
+                target: [0, -0.5, -1.25], r: '10m',
+                p1: [-3.8, -1.0, 1.65], p2: [3.8, -1.0, 1.65], p3: [-3.8, -1.0, -4.15], p4: [-3.8, 0, 1.65]
             },
             'PCC': {
                 n: 'PCC Foundation Bed', l: '7.60 m (Abutment) / 5.30 m (Wing)', b: '6.30 m / 3.10 m', h: '0.15 m', mat: 'M15 Concrete (1:4:8)',
-                est: 'PCC bed layer below all structural foundations'
+                est: 'PCC bed layer below all structural foundations',
+                target: [0, -1.075, -1.25], r: '10m',
+                p1: [-3.95, -1.15, 1.8], p2: [3.95, -1.15, 1.8], p3: [-3.95, -1.15, -4.5], p4: [-3.95, -1.0, 1.8]
             },
             'BedBlocks': {
                 n: 'Bed Blocks', l: '7.00 m', b: '1.00 m', h: '0.30 m', mat: 'M25 Concrete',
-                est: '2 x 7.00 x 1.00 x 0.30 = 4.20 m³'
+                est: '2 x 7.00 x 1.00 x 0.30 = 4.20 m³',
+                target: [0, 5.85, -0.5], r: '10m',
+                p1: [-3.5, 5.7, 0.1], p2: [3.5, 5.7, 0.1], p3: [-3.5, 5.7, -1.1], p4: [-3.5, 6.0, 0.1]
             },
             'DeckSlab': {
                 n: 'Bridge Deck Slab', l: '11.40 m (Total Span)', b: '7.00 m (Overall Width)', h: '0.74 m', mat: 'M30 RCC',
-                est: '1 x 11.40 x 7.00 x 0.74 = 59.08 m³ (6.00 m roadway)'
+                est: '1 x 11.40 x 7.00 x 0.74 = 59.08 m³ (6.00 m roadway)',
+                target: [0, 6.37, 5.0], r: '15m',
+                p1: [-3.7, 6.74, -0.7], p2: [-3.7, 6.74, 10.7], p3: [3.5, 6.74, -0.7], p4: [-3.7, 6.0, -0.7]
             },
             'AsphaltWC': {
                 n: 'Wearing Coat (Roadway)', l: '11.40 m', b: '6.00 m (Roadway Width)', h: '0.075 m (75 mm)', mat: 'Asphalt Concrete',
-                est: '1 x 11.40 x 6.00 x 0.075 = 5.13 m³'
+                est: '1 x 11.40 x 6.00 x 0.075 = 5.13 m³, Bituminous layer',
+                target: [0, 6.77, 5.0], r: '15m',
+                p1: [-3.1, 6.81, -0.7], p2: [-3.1, 6.81, 10.7], p3: [2.9, 6.81, -0.7], p4: [-3.1, 6.74, -0.7]
             },
             'Backwalls': {
                 n: 'Backwalls / Dirt Walls', l: '7.00 m', b: '0.40 m', h: '1.20 m', mat: 'M25 Concrete',
-                est: '2 x 7.00 x 0.40 x 1.20 = 6.72 m³ behind deck expansion joints'
+                est: '2 x 7.00 x 0.40 x 1.20 = 6.72 m³ behind deck expansion joints',
+                target: [0, 6.37, -0.85], r: '10m',
+                p1: [-3.6, 6.74, -0.85], p2: [3.6, 6.74, -0.85], p3: [-3.6, 6.74, -1.25], p4: [-3.6, 6.0, -0.85]
             },
             'ApproachSlabs': {
                 n: 'Approach Slabs', l: '3.50 m', b: '7.00 m', h: '0.20 m', mat: 'M25 Concrete',
-                est: '2 x 3.50 x 7.00 x 0.20 = 9.80 m³ slab transitions'
+                est: '2 x 3.50 x 7.00 x 0.20 = 9.80 m³ slab transitions',
+                target: [0, 6.64, -2.6], r: '12m',
+                p1: [-3.6, 6.74, -0.74], p2: [3.6, 6.74, -0.74], p3: [-3.6, 6.74, -4.24], p4: [-3.6, 6.54, -0.74]
             },
             'Handrails': {
                 n: 'Handrails & Posts', l: '11.40 m (Dual side)', b: '0.20 m Posts / 0.10 m Rails', h: '1.00 m Post', mat: 'Precast M25 Concrete',
-                est: '15 posts per side with horizontal concrete pipes'
+                est: '15 posts per side with horizontal concrete pipes',
+                target: [-3.5, 7.24, 5.0], r: '12m',
+                p1: [-3.6, 6.74, -0.7], p2: [-3.6, 6.74, 10.7], p3: [-3.4, 6.74, -0.7], p4: [-3.6, 7.74, -0.7]
             },
             'RCC_Pipe': {
                 n: 'RCC Humepipe Culvert', l: '10.00 m', b: '0.90 m Outer Dia', h: '0.075 m (Wall)', mat: 'RCC NP3 Pipe',
-                est: '1 x 10.00 m culvert Humepipe under approaches'
+                est: '1 x 10.00 m culvert Humepipe under approaches',
+                target: [0, -2.5, 5.0], r: '15m',
+                p1: [-5.0, -2.5, 5.0], p2: [5.0, -2.5, 5.0], p3: [-5.0, -2.5, 5.9], p4: [-5.0, -1.6, 5.0]
             },
             'ProtectionWalls': {
                 n: 'Protection Walls / Toe Walls', l: '10.00 m', b: '1.00 m (Base) / 0.40 m (Top)', h: '2.50 m', mat: 'M20 plum concrete',
-                est: 'Toe walls to protect embankment fill from river wash'
+                est: 'Toe walls to protect embankment fill from river wash',
+                target: [-5.0, -0.1, 0.0], r: '18m',
+                p1: [-5.0, -1.15, -1.05], p2: [5.0, -1.15, -1.05], p3: [-5.0, -1.15, 0.15], p4: [-5.0, 1.35, -1.05]
             },
             'GuardStones': {
                 n: 'Guard Stones', l: '0.20 m', b: '0.20 m', h: '1.00 m', mat: 'M25 Concrete',
-                est: '56 precast guard stones along retaining wall copings'
+                est: '56 precast guard stones along retaining wall copings',
+                target: [-3.9, 7.24, -10.0], r: '12m',
+                p1: [-3.9, 6.74, -10.0], p2: [-3.7, 6.74, -10.0], p3: [-3.9, 6.74, -9.8], p4: [-3.9, 7.74, -10.0]
             },
             'Bearings': {
                 n: 'Bearings', l: '0.30 m', b: '0.30 m', h: '0.05 m (50 mm)', mat: 'Elastomeric Neoprene',
-                est: '6 bearings total (3 per side) resting under deck girder positions'
+                est: '6 bearings total (3 per side) resting under deck girder positions',
+                target: [1.5, 6.02, -0.35], r: '8m',
+                p1: [1.35, 6.0, -0.5], p2: [1.65, 6.0, -0.5], p3: [1.35, 6.0, -0.2], p4: [1.35, 6.05, -0.5]
             },
             'EarthFill': {
                 n: 'Approach Road Earth Fill', l: '72.00 m (Total length)', b: '7.00 m', h: '6.74 m max', mat: 'Selected cohesive soil',
-                est: 'Earth fill compacted in 20cm layers behind bridge structures'
+                est: 'Earth fill compacted in 20cm layers behind bridge structures',
+                target: [0, 3.37, -10.0], r: '25m',
+                p1: [-3.5, 0, -10.0], p2: [3.5, 0, -10.0], p3: [-3.5, 0, -5.0], p4: [-3.5, 6.74, -10.0]
             }
         };
 
@@ -1058,7 +1187,9 @@
         };
 
         window.deselectComponent = function() {
-            document.getElementById('measCard').style.display = 'none';
+            activeComponentKey = null;
+            document.getElementById('cadHud').style.display = 'none';
+            document.getElementById('dimensionOverlay').style.display = 'none';
             if (modelViewer.model) {
                 modelViewer.model.materials.forEach(m => {
                     m.pbrMetallicRoughness.setBaseColorFactor([1, 1, 1, 1]);
@@ -1070,27 +1201,133 @@
             if (!measurementModeActive) return;
             const material = modelViewer.materialFromPoint(event.clientX, event.clientY);
             if (material && db[material.name]) {
-                const comp = db[material.name];
-                document.getElementById('measCompName').textContent = comp.n;
-                document.getElementById('measLength').textContent = comp.l;
-                document.getElementById('measBreadth').textContent = comp.b;
-                document.getElementById('measHeight').textContent = comp.h;
-                document.getElementById('measMaterial').textContent = comp.mat;
-                document.getElementById('measEstimate').textContent = 'DPR Estimate: ' + comp.est;
-                document.getElementById('measCard').style.display = 'flex';
+                activeComponentKey = material.name;
+                const comp = db[activeComponentKey];
 
-                // Fade other components
+                // Update hotspot positions in 3D space
+                document.getElementById('hotspot-p1').setAttribute('data-position', comp.p1.join(' '));
+                document.getElementById('hotspot-p2').setAttribute('data-position', comp.p2.join(' '));
+                document.getElementById('hotspot-p3').setAttribute('data-position', comp.p3.join(' '));
+                document.getElementById('hotspot-p4').setAttribute('data-position', comp.p4.join(' '));
+
+                // Smooth camera transition: Target the component center and zoom radius
+                const currentOrbit = modelViewer.getCameraOrbit();
+                modelViewer.cameraTarget = `${comp.target[0]}m ${comp.target[1]}m ${comp.target[2]}m`;
+                modelViewer.cameraOrbit = `${currentOrbit.theta}rad ${currentOrbit.phi}rad ${comp.r}`;
+
+                // Update HUD details
+                document.getElementById('hudName').textContent = comp.n;
+                document.getElementById('hudMat').textContent = comp.mat;
+                document.getElementById('hudEst').textContent = 'DPR Estimate: ' + comp.est;
+                document.getElementById('cadHud').style.display = 'flex';
+
+                // Fade out other meshes in the scene
                 modelViewer.model.materials.forEach(m => {
                     if (m.name === material.name) {
                         m.pbrMetallicRoughness.setBaseColorFactor([1, 1, 1, 1]);
                     } else {
-                        m.pbrMetallicRoughness.setBaseColorFactor([1, 1, 1, 0.15]);
+                        m.pbrMetallicRoughness.setBaseColorFactor([1, 1, 1, 0.12]);
                     }
                 });
             } else {
+                // If clicked empty space, reset selection
                 deselectComponent();
             }
         });
+
+        // ═══════════════════════════════════════════════════════════════
+        //  CAD SVG Dimension Lines Engine
+        // ═══════════════════════════════════════════════════════════════
+        function updateDimensions() {
+            if (!measurementModeActive || !activeComponentKey) {
+                document.getElementById('dimensionOverlay').style.display = 'none';
+                return;
+            }
+            const comp = db[activeComponentKey];
+            if (!comp) return;
+
+            const overlay = document.getElementById('dimensionOverlay');
+            overlay.style.display = 'block';
+            
+            // Clear previous elements
+            overlay.innerHTML = `
+                <defs>
+                    <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                        <path d="M 0 1.5 L 10 5 L 0 8.5 z" fill="#0078f5" />
+                    </marker>
+                </defs>
+            `;
+
+            const viewerRect = modelViewer.getBoundingClientRect();
+            
+            function getScreenPos(id) {
+                const el = document.getElementById(id);
+                if (!el) return null;
+                const rect = el.getBoundingClientRect();
+                if (rect.width === 0 || rect.height === 0) return null;
+                return {
+                    x: rect.left - viewerRect.left + rect.width / 2,
+                    y: rect.top - viewerRect.top + rect.height / 2
+                };
+            }
+
+            const p1 = getScreenPos('hotspot-p1');
+            const p2 = getScreenPos('hotspot-p2');
+            const p3 = getScreenPos('hotspot-p3');
+            const p4 = getScreenPos('hotspot-p4');
+
+            if (!p1) return;
+
+            function drawCADLine(ptStart, ptEnd, labelText) {
+                if (!ptStart || !ptEnd) return;
+
+                // Dimension line
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', ptStart.x);
+                line.setAttribute('y1', ptStart.y);
+                line.setAttribute('x2', ptEnd.x);
+                line.setAttribute('y2', ptEnd.y);
+                line.setAttribute('stroke', '#0078f5');
+                line.setAttribute('stroke-width', '2.5');
+                line.setAttribute('marker-start', 'url(#arrow)');
+                line.setAttribute('marker-end', 'url(#arrow)');
+                overlay.appendChild(line);
+
+                // Dimension text label with halo mask
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                const mx = (ptStart.x + ptEnd.x) / 2;
+                const my = (ptStart.y + ptEnd.y) / 2;
+                text.setAttribute('x', mx);
+                text.setAttribute('y', my - 6);
+                text.setAttribute('fill', '#005bc1');
+                text.setAttribute('font-size', '11px');
+                text.setAttribute('font-weight', '800');
+                text.setAttribute('text-anchor', 'middle');
+                text.setAttribute('paint-order', 'stroke');
+                text.setAttribute('stroke', '#ffffff');
+                text.setAttribute('stroke-width', '4px');
+                text.setAttribute('stroke-linejoin', 'round');
+                text.textContent = labelText;
+                overlay.appendChild(text);
+            }
+
+            // Draw Length (p1 to p2), Width (p1 to p3), and Height (p1 to p4)
+            if (p2) drawCADLine(p1, p2, 'L: ' + comp.l);
+            if (p3) drawCADLine(p1, p3, 'W: ' + comp.b);
+            if (p4) drawCADLine(p1, p4, 'H: ' + comp.h);
+        }
+
+        // Run dimensions update on camera movement
+        modelViewer.addEventListener('camera-change', updateDimensions);
+
+        // Animation frame loop to ensure perfect synchronization during transitions
+        function animLoop() {
+            if (measurementModeActive && activeComponentKey) {
+                updateDimensions();
+            }
+            requestAnimationFrame(animLoop);
+        }
+        requestAnimationFrame(animLoop);
     </script>
 
 </body>
