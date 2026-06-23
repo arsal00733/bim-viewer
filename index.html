@@ -289,13 +289,32 @@
             }
         }
 
-        /* 3D View Cube Styles */
+        /* 3D View Cube Styles - Revit UI Theme */
+        :root {
+            --cube-size: 68px;
+            --cube-half: 34px;
+            --cube-corner-size: 14px;
+            --cube-corner-half: 7px;
+            --cube-edge-height: 10px;
+            --cube-edge-half: 5px;
+        }
+        @media (max-width: 768px) {
+            :root {
+                --cube-size: 46px;
+                --cube-half: 23px;
+                --cube-corner-size: 10px;
+                --cube-corner-half: 5px;
+                --cube-edge-height: 8px;
+                --cube-edge-half: 4px;
+            }
+        }
+
         .view-cube-container {
             position: absolute;
             top: 24px;
             right: 24px;
-            width: 120px;
-            height: 120px;
+            width: 140px;
+            height: 140px;
             z-index: 99;
             pointer-events: auto;
             display: flex;
@@ -308,8 +327,46 @@
                 right: auto;
                 left: 16px;
                 top: 16px;
-                width: 90px;
-                height: 90px;
+                width: 100px;
+                height: 100px;
+            }
+        }
+
+        /* Home Button - Revit Style */
+        .home-btn {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 24px;
+            height: 24px;
+            background: rgba(248, 250, 252, 0.9);
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            color: #475569;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 100;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: all 0.2s ease;
+        }
+        .home-btn:hover {
+            background: #0078f5;
+            color: #ffffff;
+            border-color: #0078f5;
+            transform: scale(1.05);
+        }
+        @media (max-width: 768px) {
+            .home-btn {
+                width: 20px;
+                height: 20px;
+                top: -2px;
+                left: -2px;
+            }
+            .home-btn svg {
+                width: 11px;
+                height: 11px;
             }
         }
 
@@ -323,8 +380,8 @@
         }
 
         .cube {
-            width: 64px;
-            height: 64px;
+            width: var(--cube-size);
+            height: var(--cube-size);
             position: relative;
             transform-style: preserve-3d;
             transform: rotateX(-30deg) rotateY(45deg);
@@ -332,22 +389,14 @@
             pointer-events: auto;
         }
 
-        @media (max-width: 768px) {
-            .cube {
-                width: 44px;
-                height: 44px;
-            }
-        }
-
+        /* Cube Face Styles - Light Grey Revit Theme */
         .cube-face {
             position: absolute;
             width: 100%;
             height: 100%;
-            background: rgba(30, 41, 59, 0.75);
-            backdrop-filter: blur(4px);
-            -webkit-backdrop-filter: blur(4px);
-            border: 1.5px solid rgba(255, 255, 255, 0.2);
-            color: #e2e8f0;
+            background: linear-gradient(135deg, #ffffff 0%, #eceff1 100%);
+            border: 1.5px solid #b0bec5;
+            color: #37474f;
             font-size: 10px;
             font-weight: 700;
             display: flex;
@@ -355,8 +404,8 @@
             justify-content: center;
             user-select: none;
             backface-visibility: visible;
-            box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.6);
-            transition: background-color 0.25s, border-color 0.25s, color 0.25s;
+            box-shadow: inset 0 0 8px rgba(0,0,0,0.05), 0 2px 4px rgba(0,0,0,0.08);
+            transition: background 0.2s, border-color 0.2s, color 0.2s;
         }
 
         @media (max-width: 768px) {
@@ -367,58 +416,134 @@
         }
 
         .cube-face:hover {
-            background: rgba(59, 130, 246, 0.4);
-            border-color: var(--accent);
-            color: #ffffff;
+            background: rgba(0, 120, 245, 0.25);
+            border-color: #0078f5;
+            color: #005bc1;
         }
 
-        /* 3D transforms for faces */
-        .front  { transform: rotateY(  0deg) translateZ(32px); }
-        .back   { transform: rotateY(180deg) translateZ(32px); }
-        .right  { transform: rotateY( 90deg) translateZ(32px); }
-        .left   { transform: rotateY(-90deg) translateZ(32px); }
-        .top    { transform: rotateX( 90deg) translateZ(32px); }
-        .bottom { transform: rotateX(-90deg) translateZ(32px); }
+        /* Face Transforms */
+        .front  { transform: rotateY(  0deg) translateZ(var(--cube-half)); }
+        .back   { transform: rotateY(180deg) translateZ(var(--cube-half)); }
+        .right  { transform: rotateY( 90deg) translateZ(var(--cube-half)); }
+        .left   { transform: rotateY(-90deg) translateZ(var(--cube-half)); }
+        .top    { transform: rotateX( 90deg) translateZ(var(--cube-half)); }
+        .bottom { transform: rotateX(-90deg) translateZ(var(--cube-half)); }
 
-        @media (max-width: 768px) {
-            .front  { transform: rotateY(  0deg) translateZ(22px); }
-            .back   { transform: rotateY(180deg) translateZ(22px); }
-            .right  { transform: rotateY( 90deg) translateZ(22px); }
-            .left   { transform: rotateY(-90deg) translateZ(22px); }
-            .top    { transform: rotateX( 90deg) translateZ(22px); }
-            .bottom { transform: rotateX(-90deg) translateZ(22px); }
+        /* Revit Cube Corners Highlight */
+        .cube-corner {
+            position: absolute;
+            width: var(--cube-corner-size);
+            height: var(--cube-corner-size);
+            margin-left: calc(-1 * var(--cube-corner-half));
+            margin-top: calc(-1 * var(--cube-corner-half));
+            background: transparent;
+            z-index: 10;
+            cursor: pointer;
+            transition: background-color 0.15s, border-color 0.15s;
+            transform-style: preserve-3d;
         }
 
-        /* Compass ground ring */
+        .cube-corner:hover {
+            background: rgba(0, 120, 245, 0.85);
+            border: 1px solid #00d2ff;
+            box-shadow: 0 0 5px rgba(0, 210, 255, 0.8);
+        }
+
+        /* Corner Positions */
+        .tfl { transform: translate3d(calc(-1 * var(--cube-half)), calc(-1 * var(--cube-half)), var(--cube-half)); }
+        .tfr { transform: translate3d(var(--cube-half), calc(-1 * var(--cube-half)), var(--cube-half)); }
+        .tbl { transform: translate3d(calc(-1 * var(--cube-half)), calc(-1 * var(--cube-half)), calc(-1 * var(--cube-half))); }
+        .tbr { transform: translate3d(var(--cube-half), calc(-1 * var(--cube-half)), calc(-1 * var(--cube-half))); }
+        .bfl { transform: translate3d(calc(-1 * var(--cube-half)), var(--cube-half), var(--cube-half)); }
+        .bfr { transform: translate3d(var(--cube-half), var(--cube-half), var(--cube-half)); }
+        .bbl { transform: translate3d(calc(-1 * var(--cube-half)), var(--cube-half), calc(-1 * var(--cube-half))); }
+        .bbr { transform: translate3d(var(--cube-half), var(--cube-half), calc(-1 * var(--cube-half))); }
+
+        /* Revit Cube Edges Highlight */
+        .cube-edge {
+            position: absolute;
+            background: transparent;
+            z-index: 5;
+            cursor: pointer;
+            transition: background-color 0.15s, border-color 0.15s;
+            transform-style: preserve-3d;
+        }
+
+        .cube-edge:hover {
+            background: rgba(0, 120, 245, 0.7);
+            border: 1px solid #00d2ff;
+        }
+
+        /* Edge dimensions & positions */
+        /* Horizontal (along X) edges */
+        .tf, .tb, .bf, .bb {
+            width: calc(2 * var(--cube-half) - var(--cube-corner-size));
+            height: var(--cube-edge-height);
+            margin-left: calc(-1 * (var(--cube-half) - var(--cube-corner-half)));
+            margin-top: calc(-1 * var(--cube-edge-half));
+        }
+        .tf { transform: translate3d(0, calc(-1 * var(--cube-half)), var(--cube-half)); }
+        .tb { transform: translate3d(0, calc(-1 * var(--cube-half)), calc(-1 * var(--cube-half))); }
+        .bf { transform: translate3d(0, var(--cube-half), var(--cube-half)); }
+        .bb { transform: translate3d(0, var(--cube-half), calc(-1 * var(--cube-half))); }
+
+        /* Depth (along Z) edges */
+        .tl, .tr, .bl, .br {
+            width: calc(2 * var(--cube-half) - var(--cube-corner-size));
+            height: var(--cube-edge-height);
+            margin-left: calc(-1 * (var(--cube-half) - var(--cube-corner-half)));
+            margin-top: calc(-1 * var(--cube-edge-half));
+        }
+        .tl { transform: translate3d(calc(-1 * var(--cube-half)), calc(-1 * var(--cube-half)), 0) rotateY(90deg); }
+        .tr { transform: translate3d(var(--cube-half), calc(-1 * var(--cube-half)), 0) rotateY(90deg); }
+        .bl { transform: translate3d(calc(-1 * var(--cube-half)), var(--cube-half), 0) rotateY(90deg); }
+        .br { transform: translate3d(var(--cube-half), var(--cube-half), 0) rotateY(90deg); }
+
+        /* Vertical (along Y) edges */
+        .fl, .fr, .back-l, .back-r {
+            width: calc(2 * var(--cube-half) - var(--cube-corner-size));
+            height: var(--cube-edge-height);
+            margin-left: calc(-1 * (var(--cube-half) - var(--cube-corner-half)));
+            margin-top: calc(-1 * var(--cube-edge-half));
+        }
+        .fl { transform: translate3d(calc(-1 * var(--cube-half)), 0, var(--cube-half)) rotateZ(90deg); }
+        .fr { transform: translate3d(var(--cube-half), 0, var(--cube-half)) rotateZ(90deg); }
+        .back-l { transform: translate3d(calc(-1 * var(--cube-half)), 0, calc(-1 * var(--cube-half))) rotateZ(90deg); }
+        .back-r { transform: translate3d(var(--cube-half), 0, calc(-1 * var(--cube-half))) rotateZ(90deg); }
+
+        /* Compass Ground Ring - Revit Style */
         .compass-ring {
             position: absolute;
             top: 50%;
             left: 50%;
-            width: 104px;
-            height: 104px;
-            margin-top: -52px;
-            margin-left: -52px;
-            border: 1px dashed rgba(255, 255, 255, 0.25);
+            width: 114px;
+            height: 114px;
+            margin-top: -57px;
+            margin-left: -57px;
+            background: rgba(226, 232, 240, 0.4);
+            border: 9px solid #b0bec5;
             border-radius: 50%;
             transform-style: preserve-3d;
             transform: rotateX(65deg) rotateZ(0deg);
             pointer-events: none;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15), inset 0 2px 4px rgba(0,0,0,0.05);
         }
 
         @media (max-width: 768px) {
             .compass-ring {
-                width: 76px;
-                height: 76px;
-                margin-top: -38px;
-                margin-left: -38px;
+                width: 82px;
+                height: 82px;
+                margin-top: -41px;
+                margin-left: -41px;
+                border-width: 6px;
             }
         }
 
         .compass-label {
             position: absolute;
-            font-size: 9px;
-            font-weight: 700;
-            color: var(--text-muted);
+            font-size: 10px;
+            font-weight: 800;
+            color: #37474f;
             width: 12px;
             height: 12px;
             text-align: center;
@@ -427,7 +552,7 @@
 
         @media (max-width: 768px) {
             .compass-label {
-                font-size: 7px;
+                font-size: 8px;
             }
         }
 
@@ -470,22 +595,55 @@
         </div>
     </model-viewer>
 
-    <!-- Revit-style 3D View Cube -->
+    <!-- Revit-style 3D View Cube Container -->
     <div class="view-cube-container">
+        <!-- Home Button -->
+        <div class="home-btn" onclick="resetCameraView()" title="Home View">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+            </svg>
+        </div>
+
         <div class="compass-ring" id="compassRing">
             <div class="compass-label n">N</div>
             <div class="compass-label e">E</div>
             <div class="compass-label s">S</div>
             <div class="compass-label w">W</div>
         </div>
+        
         <div class="cube-viewport">
             <div class="cube" id="viewCube">
+                <!-- Faces -->
                 <div class="cube-face front" onclick="setCameraView('front')">FRONT</div>
                 <div class="cube-face back" onclick="setCameraView('back')">BACK</div>
                 <div class="cube-face top" onclick="setCameraView('top')">TOP</div>
                 <div class="cube-face bottom" onclick="setCameraView('bottom')">BOTTOM</div>
                 <div class="cube-face left" onclick="setCameraView('left')">LEFT</div>
                 <div class="cube-face right" onclick="setCameraView('right')">RIGHT</div>
+
+                <!-- Corners -->
+                <div class="cube-corner tfl" onclick="setCameraView('tfl')" title="Top Front Left"></div>
+                <div class="cube-corner tfr" onclick="setCameraView('tfr')" title="Top Front Right"></div>
+                <div class="cube-corner tbl" onclick="setCameraView('tbl')" title="Top Back Left"></div>
+                <div class="cube-corner tbr" onclick="setCameraView('tbr')" title="Top Back Right"></div>
+                <div class="cube-corner bfl" onclick="setCameraView('bfl')" title="Bottom Front Left"></div>
+                <div class="cube-corner bfr" onclick="setCameraView('bfr')" title="Bottom Front Right"></div>
+                <div class="cube-corner bbl" onclick="setCameraView('bbl')" title="Bottom Back Left"></div>
+                <div class="cube-corner bbr" onclick="setCameraView('bbr')" title="Bottom Back Right"></div>
+
+                <!-- Edges -->
+                <div class="cube-edge tf" onclick="setCameraView('tf')" title="Top Front"></div>
+                <div class="cube-edge tb" onclick="setCameraView('tb')" title="Top Back"></div>
+                <div class="cube-edge tl" onclick="setCameraView('tl')" title="Top Left"></div>
+                <div class="cube-edge tr" onclick="setCameraView('tr')" title="Top Right"></div>
+                <div class="cube-edge bf" onclick="setCameraView('bf')" title="Bottom Front"></div>
+                <div class="cube-edge bb" onclick="setCameraView('bb')" title="Bottom Back"></div>
+                <div class="cube-edge bl" onclick="setCameraView('bl')" title="Bottom Left"></div>
+                <div class="cube-edge br" onclick="setCameraView('br')" title="Bottom Right"></div>
+                <div class="cube-edge fl" onclick="setCameraView('fl')" title="Front Left"></div>
+                <div class="cube-edge fr" onclick="setCameraView('fr')" title="Front Right"></div>
+                <div class="cube-edge back-l" onclick="setCameraView('back-l')" title="Back Left"></div>
+                <div class="cube-edge back-r" onclick="setCameraView('back-r')" title="Back Right"></div>
             </div>
         </div>
     </div>
@@ -536,28 +694,46 @@
             document.getElementById('infoPanel').classList.add('minimized');
         }
 
-        // Smooth camera transitions for View Cube faces
+        // Home View Reset
+        window.resetCameraView = function() {
+            modelViewer.cameraOrbit = '45deg 60deg auto';
+        };
+
+        // Smooth camera transitions for View Cube faces, corners, and edges
         window.setCameraView = function(view) {
             let orbit = '';
             switch(view) {
-                case 'top':
-                    orbit = '0deg 0.1deg auto';
-                    break;
-                case 'bottom':
-                    orbit = '0deg 179.9deg auto';
-                    break;
-                case 'front':
-                    orbit = '0deg 90deg auto';
-                    break;
-                case 'back':
-                    orbit = '180deg 90deg auto';
-                    break;
-                case 'left':
-                    orbit = '-90deg 90deg auto';
-                    break;
-                case 'right':
-                    orbit = '90deg 90deg auto';
-                    break;
+                // Faces
+                case 'top':     orbit = '0deg 0.1deg auto'; break;
+                case 'bottom':  orbit = '0deg 179.9deg auto'; break;
+                case 'front':   orbit = '0deg 90deg auto'; break;
+                case 'back':    orbit = '180deg 90deg auto'; break;
+                case 'left':    orbit = '-90deg 90deg auto'; break;
+                case 'right':   orbit = '90deg 90deg auto'; break;
+                
+                // Corners (Isometric Views)
+                case 'tfl':     orbit = '-45deg 45deg auto'; break;
+                case 'tfr':     orbit = '45deg 45deg auto'; break;
+                case 'tbl':     orbit = '-135deg 45deg auto'; break;
+                case 'tbr':     orbit = '135deg 45deg auto'; break;
+                case 'bfl':     orbit = '-45deg 135deg auto'; break;
+                case 'bfr':     orbit = '45deg 135deg auto'; break;
+                case 'bbl':     orbit = '-135deg 135deg auto'; break;
+                case 'bbr':     orbit = '135deg 135deg auto'; break;
+
+                // Edges
+                case 'tf':      orbit = '0deg 45deg auto'; break;
+                case 'tb':      orbit = '180deg 45deg auto'; break;
+                case 'tl':      orbit = '-90deg 45deg auto'; break;
+                case 'tr':      orbit = '90deg 45deg auto'; break;
+                case 'bf':      orbit = '0deg 135deg auto'; break;
+                case 'bb':      orbit = '180deg 135deg auto'; break;
+                case 'bl':      orbit = '-90deg 135deg auto'; break;
+                case 'br':      orbit = '90deg 135deg auto'; break;
+                case 'fl':      orbit = '-45deg 90deg auto'; break;
+                case 'fr':      orbit = '45deg 90deg auto'; break;
+                case 'back-l':  orbit = '-135deg 90deg auto'; break;
+                case 'back-r':  orbit = '135deg 90deg auto'; break;
             }
             if (orbit) {
                 modelViewer.cameraOrbit = orbit;
