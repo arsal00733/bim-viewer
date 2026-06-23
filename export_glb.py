@@ -12,16 +12,16 @@ import trimesh
 import os
 
 MATERIALS = {
-    "concrete_a":  (183, 176, 166, 255),  # #B7B0A6 retaining walls / abutments
-    "concrete_b":  (170, 164, 155, 255),  # slightly darker layer
-    "pcc":         (115, 112, 107, 255),  # #73706B lean PCC
-    "footing":     (143, 138, 130, 255),  # #8F8A82 below-grade footings
-    "bedblock":    (192, 186, 176, 255),  # lighter precast bed block
-    "deck":        (169, 163, 151, 255),  # #A9A397 weathered deck
-    "earth":       (139,  74,  43, 255),  # #8B4A2B laterite soil
-    "steel":       ( 82,  86,  92, 255),  # #52565C structural steel
-    "asphalt":     ( 30,  30,  31, 255),  # #1E1E1F bituminous asphalt
-    "handrail":    (184, 184, 181, 255),  # #B8B8B5 galvanised railing
+    "concrete_a":  (180, 175, 168, 255),  # #B4AFA8 warm grey cast concrete
+    "concrete_b":  (168, 163, 156, 255),  # slightly darker concrete layer
+    "pcc":         (120, 118, 112, 255),  # #787670 lean PCC
+    "footing":     (145, 140, 132, 255),  # #918C84 below-grade footings
+    "bedblock":    (190, 185, 178, 255),  # #BEB9B2 precast bed block
+    "deck":        (165, 160, 152, 255),  # #A5A098 weathered deck
+    "earth":       (170, 130, 100, 255),  # #AA8264 earth fill
+    "steel":       ( 75,  80,  85, 255),  # #4B5055 steel bearings
+    "asphalt":     ( 40,  40,  42, 255),  # #28282A bituminous asphalt
+    "handrail":    (185, 185, 180, 255),  # #B9B9B4 galvanised railing
     "misc":        ( 80,  80,  82, 200),  # dark grey misc
 }
 
