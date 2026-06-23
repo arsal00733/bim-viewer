@@ -12,17 +12,17 @@ import trimesh
 import os
 
 MATERIALS = {
-    "concrete_a":  (145, 142, 135, 255),  # Medium warm grey concrete
-    "concrete_b":  (128, 125, 118, 255),  # Slightly darker warm grey concrete (for alternating layers)
-    "pcc":         (100, 100, 100, 255),  # Plain cement concrete (dark grey)
-    "footing":     (135, 132, 125, 255),  # Main footing concrete
-    "bedblock":    (165, 162, 155, 255),  # Lighter concrete for bed blocks
-    "deck":        (158, 155, 148, 255),  # Deck surface
+    "concrete_a":  (205, 198, 182, 255),  # Warm off-white / light beige concrete
+    "concrete_b":  (190, 183, 168, 255),  # Slightly darker warm beige concrete
+    "pcc":         (130, 127, 120, 255),  # Plain cement concrete (grey)
+    "footing":     (175, 170, 158, 255),  # Structural footing concrete
+    "bedblock":    (200, 195, 180, 255),  # Light concrete for bed blocks
+    "deck":        (155, 153, 148, 255),  # Muted grey weathered deck surface
     "earth":       (139,  90,  43, 255),  # Brown earth fill
-    "steel":       ( 70, 100, 140, 255),  # Blue-grey steel
-    "asphalt":     ( 50,  50,  52, 255),  # Dark asphalt road
-    "handrail":    (120, 118, 112, 255),  # Darker railing
-    "misc":        (100, 160, 220, 200),  # Light blue misc
+    "steel":       ( 85,  88,  92, 255),  # Muted grey steel
+    "asphalt":     ( 45,  45,  48, 255),  # Dark asphalt road
+    "handrail":    (210, 210, 207, 255),  # White / light grey railing
+    "misc":        (150, 148, 142, 200),  # Neutral grey misc
 }
 
 # ═══════════════════════════════════════════════════════════════
