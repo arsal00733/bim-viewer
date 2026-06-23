@@ -288,6 +288,153 @@
                 padding: 12px 20px;
             }
         }
+
+        /* 3D View Cube Styles */
+        .view-cube-container {
+            position: absolute;
+            top: 24px;
+            right: 24px;
+            width: 120px;
+            height: 120px;
+            z-index: 99;
+            pointer-events: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        @media (max-width: 768px) {
+            .view-cube-container {
+                right: auto;
+                left: 16px;
+                top: 16px;
+                width: 90px;
+                height: 90px;
+            }
+        }
+
+        .cube-viewport {
+            width: 100%;
+            height: 100%;
+            perspective: 350px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .cube {
+            width: 64px;
+            height: 64px;
+            position: relative;
+            transform-style: preserve-3d;
+            transform: rotateX(-30deg) rotateY(45deg);
+            cursor: pointer;
+            pointer-events: auto;
+        }
+
+        @media (max-width: 768px) {
+            .cube {
+                width: 44px;
+                height: 44px;
+            }
+        }
+
+        .cube-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: rgba(30, 41, 59, 0.75);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            border: 1.5px solid rgba(255, 255, 255, 0.2);
+            color: #e2e8f0;
+            font-size: 10px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+            backface-visibility: visible;
+            box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.6);
+            transition: background-color 0.25s, border-color 0.25s, color 0.25s;
+        }
+
+        @media (max-width: 768px) {
+            .cube-face {
+                font-size: 8px;
+                border-width: 1px;
+            }
+        }
+
+        .cube-face:hover {
+            background: rgba(59, 130, 246, 0.4);
+            border-color: var(--accent);
+            color: #ffffff;
+        }
+
+        /* 3D transforms for faces */
+        .front  { transform: rotateY(  0deg) translateZ(32px); }
+        .back   { transform: rotateY(180deg) translateZ(32px); }
+        .right  { transform: rotateY( 90deg) translateZ(32px); }
+        .left   { transform: rotateY(-90deg) translateZ(32px); }
+        .top    { transform: rotateX( 90deg) translateZ(32px); }
+        .bottom { transform: rotateX(-90deg) translateZ(32px); }
+
+        @media (max-width: 768px) {
+            .front  { transform: rotateY(  0deg) translateZ(22px); }
+            .back   { transform: rotateY(180deg) translateZ(22px); }
+            .right  { transform: rotateY( 90deg) translateZ(22px); }
+            .left   { transform: rotateY(-90deg) translateZ(22px); }
+            .top    { transform: rotateX( 90deg) translateZ(22px); }
+            .bottom { transform: rotateX(-90deg) translateZ(22px); }
+        }
+
+        /* Compass ground ring */
+        .compass-ring {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 104px;
+            height: 104px;
+            margin-top: -52px;
+            margin-left: -52px;
+            border: 1px dashed rgba(255, 255, 255, 0.25);
+            border-radius: 50%;
+            transform-style: preserve-3d;
+            transform: rotateX(65deg) rotateZ(0deg);
+            pointer-events: none;
+        }
+
+        @media (max-width: 768px) {
+            .compass-ring {
+                width: 76px;
+                height: 76px;
+                margin-top: -38px;
+                margin-left: -38px;
+            }
+        }
+
+        .compass-label {
+            position: absolute;
+            font-size: 9px;
+            font-weight: 700;
+            color: var(--text-muted);
+            width: 12px;
+            height: 12px;
+            text-align: center;
+            line-height: 12px;
+        }
+
+        @media (max-width: 768px) {
+            .compass-label {
+                font-size: 7px;
+            }
+        }
+
+        .compass-label.n { top: 2px; left: 50%; margin-left: -6px; }
+        .compass-label.s { bottom: 2px; left: 50%; margin-left: -6px; }
+        .compass-label.w { left: 2px; top: 50%; margin-top: -6px; }
+        .compass-label.e { right: 2px; top: 50%; margin-top: -6px; }
     </style>
 </head>
 <body>
@@ -323,6 +470,26 @@
         </div>
     </model-viewer>
 
+    <!-- Revit-style 3D View Cube -->
+    <div class="view-cube-container">
+        <div class="compass-ring" id="compassRing">
+            <div class="compass-label n">N</div>
+            <div class="compass-label e">E</div>
+            <div class="compass-label s">S</div>
+            <div class="compass-label w">W</div>
+        </div>
+        <div class="cube-viewport">
+            <div class="cube" id="viewCube">
+                <div class="cube-face front" onclick="setCameraView('front')">FRONT</div>
+                <div class="cube-face back" onclick="setCameraView('back')">BACK</div>
+                <div class="cube-face top" onclick="setCameraView('top')">TOP</div>
+                <div class="cube-face bottom" onclick="setCameraView('bottom')">BOTTOM</div>
+                <div class="cube-face left" onclick="setCameraView('left')">LEFT</div>
+                <div class="cube-face right" onclick="setCameraView('right')">RIGHT</div>
+            </div>
+        </div>
+    </div>
+
     <!-- Glassmorphism Overlay -->
     <div class="info-panel" id="infoPanel">
         <div class="panel-header" onclick="togglePanel()">
@@ -356,6 +523,10 @@
     </div>
 
     <script>
+        const modelViewer = document.querySelector('model-viewer');
+        const viewCube = document.getElementById('viewCube');
+        const compassRing = document.getElementById('compassRing');
+
         function togglePanel() {
             document.getElementById('infoPanel').classList.toggle('minimized');
         }
@@ -364,6 +535,49 @@
         if (window.innerWidth <= 768) {
             document.getElementById('infoPanel').classList.add('minimized');
         }
+
+        // Smooth camera transitions for View Cube faces
+        window.setCameraView = function(view) {
+            let orbit = '';
+            switch(view) {
+                case 'top':
+                    orbit = '0deg 0.1deg auto';
+                    break;
+                case 'bottom':
+                    orbit = '0deg 179.9deg auto';
+                    break;
+                case 'front':
+                    orbit = '0deg 90deg auto';
+                    break;
+                case 'back':
+                    orbit = '180deg 90deg auto';
+                    break;
+                case 'left':
+                    orbit = '-90deg 90deg auto';
+                    break;
+                case 'right':
+                    orbit = '90deg 90deg auto';
+                    break;
+            }
+            if (orbit) {
+                modelViewer.cameraOrbit = orbit;
+            }
+        };
+
+        // Sync view cube and compass ring rotation with model-viewer camera angle
+        modelViewer.addEventListener('camera-change', () => {
+            const orbit = modelViewer.getCameraOrbit();
+            
+            // Convert theta and phi from radians to degrees
+            const thetaDeg = (orbit.theta * 180) / Math.PI;
+            const phiDeg = (orbit.phi * 180) / Math.PI;
+            
+            // Rotate cube in full 3D
+            viewCube.style.transform = `rotateX(${phiDeg - 90}deg) rotateY(${-thetaDeg}deg)`;
+            
+            // Spin compass ring horizontally
+            compassRing.style.transform = `rotateX(65deg) rotateZ(${-thetaDeg}deg)`;
+        });
     </script>
 
 </body>
