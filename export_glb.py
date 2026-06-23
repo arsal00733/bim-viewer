@@ -12,16 +12,16 @@ import trimesh
 import os
 
 MATERIALS = {
-    "concrete_a":  (180, 175, 168, 255),  # #B4AFA8 warm grey cast concrete
-    "concrete_b":  (168, 163, 156, 255),  # slightly darker concrete layer
-    "pcc":         (120, 118, 112, 255),  # #787670 lean PCC
-    "footing":     (145, 140, 132, 255),  # #918C84 below-grade footings
-    "bedblock":    (190, 185, 178, 255),  # #BEB9B2 precast bed block
-    "deck":        (165, 160, 152, 255),  # #A5A098 weathered deck
-    "earth":       (170, 130, 100, 255),  # #AA8264 earth fill
-    "steel":       ( 75,  80,  85, 255),  # #4B5055 steel bearings
-    "asphalt":     ( 40,  40,  42, 255),  # #28282A bituminous asphalt
-    "handrail":    (185, 185, 180, 255),  # #B9B9B4 galvanised railing
+    "concrete_a":  (200, 195, 188, 255),  # #C8C3BC warm grey walls/abutments
+    "concrete_b":  (188, 183, 176, 255),  # slightly darker layer
+    "pcc":         (130, 127, 120, 255),  # lean PCC
+    "footing":     (175, 170, 162, 255),  # #AFAAA2 footings (darker than walls)
+    "bedblock":    (200, 195, 188, 255),  # precast bed block
+    "deck":        (185, 182, 176, 255),  # #B9B6B0 deck slab
+    "earth":       (170, 130, 100, 255),  # #AA8264 earth fill (keep)
+    "steel":       ( 95, 100, 105, 255),  # #5F6469 steel bearings
+    "asphalt":     ( 70,  70,  72, 255),  # #464648 asphalt road
+    "handrail":    (220, 220, 215, 255),  # #DCDCD7 bright handrails
     "misc":        ( 80,  80,  82, 200),  # dark grey misc
 }
 
