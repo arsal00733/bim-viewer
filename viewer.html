@@ -1,0 +1,1797 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Kakkathode Bridge | Interactive BIM Viewer</title>
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Firebase Import Map -->
+    <script type="importmap">
+    {
+        "imports": {
+            "firebase/app": "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js",
+            "firebase/analytics": "https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js"
+        }
+    }
+    </script>
+
+    <!-- Model Viewer Component -->
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js"></script>
+
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --accent: #3b82f6;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --glass-bg: rgba(15, 23, 42, 0.6);
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        body, html { 
+            margin: 0; 
+            padding: 0; 
+            width: 100%; 
+            height: 100%; 
+            overflow: hidden; 
+            background-color: var(--bg-dark);
+            font-family: 'Outfit', sans-serif;
+            color: var(--text-main);
+        }
+
+        /* 3D Viewer Canvas */
+        model-viewer { 
+            width: 100%; 
+            height: 100vh; 
+            --progress-bar-color: var(--accent);
+            --progress-bar-height: 4px;
+            background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+            outline: none;
+        }
+
+        /* Glassmorphism Info Panel */
+        /* ═══════ View Cube ═══════ */
+
+        @keyframes stageFlash {
+            0% { box-shadow: 0 8px 32px rgba(0,0,0,0.3), 0 0 0 0 rgba(59,130,246,0.4); }
+            100% { box-shadow: 0 8px 32px rgba(0,0,0,0.3), 0 0 0 20px rgba(59,130,246,0); }
+        }
+
+        /* ═══════ Site Toolbar ═══════ */
+        .site-toolbar {
+            position: absolute;
+            top: 24px;
+            left: 24px;
+            background: rgba(15,23,42,0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            padding: 6px 14px;
+            z-index: 15;
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .site-toolbar .tag {
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            color: var(--text-muted);
+            background: rgba(59,130,246,0.2);
+            padding: 2px 8px;
+            border-radius: 10px;
+            border: 1px solid rgba(59,130,246,0.25);
+        }
+        .site-toolbar .title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+        .site-toolbar .back-link {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 16px;
+            line-height: 1;
+            padding-right: 4px;
+            pointer-events: auto;
+        }
+        .site-toolbar .back-link:hover { color: var(--text-main); }
+        @media (max-width: 768px) {
+            .site-toolbar {
+                top: 16px;
+                left: 12px;
+                padding: 4px 10px;
+            }
+            .site-toolbar .tag { font-size: 8px; padding: 1px 6px; }
+            .site-toolbar .title { font-size: 12px; }
+        }
+
+        .stage-flash {
+            animation: stageFlash 0.6s ease-out;
+        }
+
+        /* AR Button Customization */
+        .ar-button {
+            position: absolute;
+            bottom: 32px;
+            right: 32px;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 14px 24px;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 600;
+            font-size: 15px;
+            box-shadow: 0 8px 24px rgba(59, 130, 246, 0.4);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .ar-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 28px rgba(59, 130, 246, 0.5);
+        }
+
+        .ar-button:active {
+            transform: translateY(1px);
+        }
+
+        /* Custom Loading Poster */
+        #poster {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-dark);
+            z-index: 10;
+        }
+
+        .loader {
+            width: 48px;
+            height: 48px;
+            border: 3px solid rgba(59, 130, 246, 0.2);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 16px;
+        }
+
+        @keyframes spin { 
+            to { transform: rotate(360deg); } 
+        }
+
+        .loading-text {
+            color: var(--text-muted);
+            font-size: 14px;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            animation: pulse 1.5s ease-in-out infinite alternate;
+        }
+
+        @keyframes pulse {
+            to { opacity: 0.5; }
+        }
+
+        /* Presentation Vignette Overlay — disabled, kept for reference */
+        #vignetteOverlay { display: none; }
+
+        /* CAD Dimension Label — positioned by JS */
+        .dim-badge {
+            position: fixed;
+            z-index: 9999;
+            background: rgba(10, 14, 30, 0.93);
+            border: 1.5px solid #60a5fa;
+            color: #e2e8f0;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 700;
+            font-family: 'Courier New', monospace;
+            white-space: nowrap;
+            pointer-events: none;
+            display: none;
+            transform: translate(-50%, -50%);
+        }
+
+        /* Mobile Adjustments */
+        @media (max-width: 768px) {
+            .info-panel {
+                top: auto;
+                bottom: 16px;
+                left: 12px;
+                right: 12px;
+                max-width: none;
+                pointer-events: auto;
+            }
+
+            .toggle-btn {
+                display: flex;
+            }
+            
+            .ar-button {
+                bottom: auto;
+                top: 72px;
+                right: 16px;
+                padding: 10px 16px;
+                font-size: 13px;
+            }
+
+            .wbs-panel {
+                top: 62px;
+                right: 12px;
+                width: 190px;
+                max-height: calc(100vh - 140px);
+                font-size: 12px;
+                padding: 10px;
+            }
+        }
+
+        /* Dimensioning Hotspots and CAD HUD Styles */
+        /* visibility:hidden + 8x8px = model-viewer positions them correctly
+           and getBoundingClientRect() returns real screen coords.
+           opacity:0 + 1x1px caused degenerate rects → dimension lines never drew. */
+        #hotspot-p1, #hotspot-p2, #hotspot-p3, #hotspot-p4 {
+            display: block !important;
+            visibility: hidden !important;
+            pointer-events: none !important;
+            width: 8px !important;
+            height: 8px !important;
+            padding: 0 !important;
+            margin: -4px !important;
+            border: none !important;
+        }
+
+        #cadHud {
+            position: absolute;
+            bottom: 24px;
+            left: 24px;
+            background: rgba(15, 23, 42, 0.92);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            padding: 14px 18px;
+            color: #f8fafc;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            font-size: 11px;
+            z-index: 100;
+            display: none;
+            flex-direction: column;
+            gap: 6px;
+            width: 320px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.4);
+            transition: all 0.3s ease;
+            animation: slideUp 0.3s ease-out;
+        }
+
+        #cadHud .hud-header {
+            font-size: 13px;
+            font-weight: 800;
+            color: #38bdf8;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 6px;
+            margin-bottom: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        #cadHud .hud-close {
+            cursor: pointer;
+            color: #94a3b8;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.2s;
+        }
+
+        #cadHud .hud-close:hover {
+            color: #f8fafc;
+        }
+
+        #cadHud .hud-dims {
+            background: rgba(96, 165, 250, 0.08);
+            border: 1px solid rgba(96, 165, 250, 0.2);
+            border-radius: 6px;
+            padding: 6px 8px;
+            margin-bottom: 2px;
+        }
+        #cadHud .hud-dims .hud-row span:first-child {
+            color: #60a5fa;
+        }
+        #cadHud .hud-dims .hud-row span:last-child {
+            color: #e2e8f0;
+            font-weight: 700;
+        }
+        #cadHud .hud-row {
+            display: flex;
+            justify-content: space-between;
+        }
+        #cadHud .hud-row span:first-child {
+            color: #94a3b8;
+            font-weight: 600;
+        }
+        #cadHud .hud-row span:last-child {
+            color: #f8fafc;
+            font-weight: 700;
+        }
+
+        #cadHud .hud-estimate {
+            background: rgba(74, 222, 128, 0.1);
+            border: 1px solid rgba(74, 222, 128, 0.25);
+            border-radius: 6px;
+            padding: 8px;
+            color: #4ade80;
+            margin-top: 4px;
+            font-size: 10.5px;
+            line-height: 1.4;
+        }
+
+        @media (max-width: 768px) {
+            #cadHud {
+                bottom: 80px;
+                left: 16px;
+                right: 16px;
+                width: auto;
+            }
+        }
+
+        /* Measurements Toggle & Card Styles */
+        .measurements-toggle {
+            position: absolute;
+            top: 24px;
+            right: 180px;
+            background: rgba(248, 250, 252, 0.95);
+            backdrop-filter: blur(8px);
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            padding: 8px 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #334155;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            z-index: 100;
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+        .measurements-toggle:hover {
+            background: #ffffff;
+            border-color: #0078f5;
+            color: #0078f5;
+        }
+        .measurements-toggle.active {
+            background: #0078f5;
+            color: #ffffff;
+            border-color: #0078f5;
+        }
+        .measurements-toggle .toggle-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #94a3b8;
+            transition: background-color 0.2s;
+        }
+        .measurements-toggle.active .toggle-dot {
+            background: #4ade80;
+            box-shadow: 0 0 8px #4ade80;
+        }
+
+        .measurement-card {
+            position: absolute;
+            bottom: 110px;
+            right: 24px;
+            width: 290px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(8px);
+            border: 1px solid #cbd5e1;
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            z-index: 100;
+            display: none;
+            flex-direction: column;
+            animation: slideUp 0.3s ease-out;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(10px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .measurement-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 8px;
+        }
+
+        .measurement-card-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #1e293b;
+        }
+
+        .measurement-card-close {
+            cursor: pointer;
+            color: #94a3b8;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.2s;
+        }
+
+        .measurement-card-close:hover {
+            color: #475569;
+        }
+
+        .measurement-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .measurement-val-box {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 8px;
+            text-align: center;
+        }
+
+        .measurement-val-label {
+            font-size: 9px;
+            font-weight: 700;
+            color: #64748b;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+
+        .measurement-val-num {
+            font-size: 11px;
+            font-weight: 700;
+            color: #0078f5;
+            word-break: break-word;
+        }
+
+        .measurement-extra-info {
+            font-size: 11px;
+            color: #15803d;
+            line-height: 1.4;
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            border-radius: 6px;
+            padding: 8px;
+            margin-top: 4px;
+        }
+
+        model-viewer.measure-mode-active {
+            cursor: crosshair !important;
+        }
+
+        @media (max-width: 768px) {
+            .measurements-toggle {
+                top: 24px;
+                left: 124px;
+                right: auto;
+                font-size: 11px;
+                padding: 6px 12px;
+            }
+            .measurement-card {
+                bottom: 100px;
+                left: 16px;
+                right: 16px;
+                width: auto;
+            }
+        }
+
+        /* 3D View Cube Styles - Revit UI Theme */
+        :root {
+            --cube-size: 68px;
+            --cube-half: 34px;
+            --cube-corner-size: 14px;
+            --cube-corner-half: 7px;
+            --cube-edge-height: 10px;
+            --cube-edge-half: 5px;
+        }
+        @media (max-width: 768px) {
+            :root {
+                --cube-size: 46px;
+                --cube-half: 23px;
+                --cube-corner-size: 10px;
+                --cube-corner-half: 5px;
+                --cube-edge-height: 8px;
+                --cube-edge-half: 4px;
+            }
+        }
+
+        .view-cube-container {
+            position: absolute;
+            top: 76px;
+            left: 24px;
+            bottom: auto;
+            right: auto;
+            width: 140px;
+            height: 140px;
+            z-index: 15;
+            pointer-events: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        @media (max-width: 768px) {
+            .view-cube-container {
+                right: auto;
+                left: 16px;
+                top: 66px;
+                bottom: auto;
+                width: 100px;
+                height: 100px;
+            }
+        }
+
+        /* Home Button - Revit Style */
+        .home-btn {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 24px;
+            height: 24px;
+            background: rgba(248, 250, 252, 0.9);
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            color: #475569;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 100;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: all 0.2s ease;
+        }
+        .home-btn:hover {
+            background: #0078f5;
+            color: #ffffff;
+            border-color: #0078f5;
+            transform: scale(1.05);
+        }
+        @media (max-width: 768px) {
+            .home-btn {
+                width: 20px;
+                height: 20px;
+                top: -2px;
+                left: -2px;
+            }
+            .home-btn svg {
+                width: 11px;
+                height: 11px;
+            }
+        }
+
+        .cube-viewport {
+            width: 100%;
+            height: 100%;
+            perspective: 350px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .cube {
+            width: var(--cube-size);
+            height: var(--cube-size);
+            position: relative;
+            transform-style: preserve-3d;
+            transform: rotateX(-30deg) rotateY(45deg);
+            cursor: pointer;
+            pointer-events: auto;
+        }
+
+        /* Cube Face Styles - Light Grey Revit Theme */
+        .cube-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #ffffff 0%, #eceff1 100%);
+            border: 1.5px solid #b0bec5;
+            color: #37474f;
+            font-size: 10px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+            backface-visibility: visible;
+            box-shadow: inset 0 0 8px rgba(0,0,0,0.05), 0 2px 4px rgba(0,0,0,0.08);
+            transition: background 0.2s, border-color 0.2s, color 0.2s;
+        }
+
+        @media (max-width: 768px) {
+            .cube-face {
+                font-size: 8px;
+                border-width: 1px;
+            }
+        }
+
+        .cube-face:hover {
+            background: rgba(0, 120, 245, 0.25);
+            border-color: #0078f5;
+            color: #005bc1;
+        }
+
+        /* Face Transforms */
+        .front  { transform: rotateY(  0deg) translateZ(var(--cube-half)); }
+        .back   { transform: rotateY(180deg) translateZ(var(--cube-half)); }
+        .right  { transform: rotateY( 90deg) translateZ(var(--cube-half)); }
+        .left   { transform: rotateY(-90deg) translateZ(var(--cube-half)); }
+        .top    { transform: rotateX( 90deg) translateZ(var(--cube-half)); }
+        .bottom { transform: rotateX(-90deg) translateZ(var(--cube-half)); }
+
+        /* Revit Cube Corners Highlight */
+        .cube-corner {
+            position: absolute;
+            width: var(--cube-corner-size);
+            height: var(--cube-corner-size);
+            margin-left: calc(-1 * var(--cube-corner-half));
+            margin-top: calc(-1 * var(--cube-corner-half));
+            background: transparent;
+            z-index: 10;
+            cursor: pointer;
+            transition: background-color 0.15s, border-color 0.15s;
+            transform-style: preserve-3d;
+        }
+
+        .cube-corner:hover {
+            background: rgba(0, 120, 245, 0.85);
+            border: 1px solid #00d2ff;
+            box-shadow: 0 0 5px rgba(0, 210, 255, 0.8);
+        }
+
+        /* Corner Positions */
+        .tfl { transform: translate3d(calc(-1 * var(--cube-half)), calc(-1 * var(--cube-half)), var(--cube-half)); }
+        .tfr { transform: translate3d(var(--cube-half), calc(-1 * var(--cube-half)), var(--cube-half)); }
+        .tbl { transform: translate3d(calc(-1 * var(--cube-half)), calc(-1 * var(--cube-half)), calc(-1 * var(--cube-half))); }
+        .tbr { transform: translate3d(var(--cube-half), calc(-1 * var(--cube-half)), calc(-1 * var(--cube-half))); }
+        .bfl { transform: translate3d(calc(-1 * var(--cube-half)), var(--cube-half), var(--cube-half)); }
+        .bfr { transform: translate3d(var(--cube-half), var(--cube-half), var(--cube-half)); }
+        .bbl { transform: translate3d(calc(-1 * var(--cube-half)), var(--cube-half), calc(-1 * var(--cube-half))); }
+        .bbr { transform: translate3d(var(--cube-half), var(--cube-half), calc(-1 * var(--cube-half))); }
+
+        /* Revit Cube Edges Highlight */
+        .cube-edge {
+            position: absolute;
+            background: transparent;
+            z-index: 5;
+            cursor: pointer;
+            transition: background-color 0.15s, border-color 0.15s;
+            transform-style: preserve-3d;
+        }
+
+        .cube-edge:hover {
+            background: rgba(0, 120, 245, 0.7);
+            border: 1px solid #00d2ff;
+        }
+
+        /* Edge dimensions & positions */
+        /* Horizontal (along X) edges */
+        .tf, .tb, .bf, .bb {
+            width: calc(2 * var(--cube-half) - var(--cube-corner-size));
+            height: var(--cube-edge-height);
+            margin-left: calc(-1 * (var(--cube-half) - var(--cube-corner-half)));
+            margin-top: calc(-1 * var(--cube-edge-half));
+        }
+        .tf { transform: translate3d(0, calc(-1 * var(--cube-half)), var(--cube-half)); }
+        .tb { transform: translate3d(0, calc(-1 * var(--cube-half)), calc(-1 * var(--cube-half))); }
+        .bf { transform: translate3d(0, var(--cube-half), var(--cube-half)); }
+        .bb { transform: translate3d(0, var(--cube-half), calc(-1 * var(--cube-half))); }
+
+        /* Depth (along Z) edges */
+        .tl, .tr, .bl, .br {
+            width: calc(2 * var(--cube-half) - var(--cube-corner-size));
+            height: var(--cube-edge-height);
+            margin-left: calc(-1 * (var(--cube-half) - var(--cube-corner-half)));
+            margin-top: calc(-1 * var(--cube-edge-half));
+        }
+        .tl { transform: translate3d(calc(-1 * var(--cube-half)), calc(-1 * var(--cube-half)), 0) rotateY(90deg); }
+        .tr { transform: translate3d(var(--cube-half), calc(-1 * var(--cube-half)), 0) rotateY(90deg); }
+        .bl { transform: translate3d(calc(-1 * var(--cube-half)), var(--cube-half), 0) rotateY(90deg); }
+        .br { transform: translate3d(var(--cube-half), var(--cube-half), 0) rotateY(90deg); }
+
+        /* Vertical (along Y) edges */
+        .fl, .fr, .back-l, .back-r {
+            width: calc(2 * var(--cube-half) - var(--cube-corner-size));
+            height: var(--cube-edge-height);
+            margin-left: calc(-1 * (var(--cube-half) - var(--cube-corner-half)));
+            margin-top: calc(-1 * var(--cube-edge-half));
+        }
+        .fl { transform: translate3d(calc(-1 * var(--cube-half)), 0, var(--cube-half)) rotateZ(90deg); }
+        .fr { transform: translate3d(var(--cube-half), 0, var(--cube-half)) rotateZ(90deg); }
+        .back-l { transform: translate3d(calc(-1 * var(--cube-half)), 0, calc(-1 * var(--cube-half))) rotateZ(90deg); }
+        .back-r { transform: translate3d(var(--cube-half), 0, calc(-1 * var(--cube-half))) rotateZ(90deg); }
+
+        /* Compass Ground Ring - Revit Style */
+        .compass-ring {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 114px;
+            height: 114px;
+            margin-top: -57px;
+            margin-left: -57px;
+            background: rgba(226, 232, 240, 0.4);
+            border: 9px solid #b0bec5;
+            border-radius: 50%;
+            transform-style: preserve-3d;
+            transform: rotateX(65deg) rotateZ(0deg);
+            pointer-events: none;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15), inset 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        @media (max-width: 768px) {
+            .compass-ring {
+                width: 82px;
+                height: 82px;
+                margin-top: -41px;
+                margin-left: -41px;
+                border-width: 6px;
+            }
+        }
+
+        .compass-label {
+            position: absolute;
+            font-size: 10px;
+            font-weight: 800;
+            color: #37474f;
+            width: 12px;
+            height: 12px;
+            text-align: center;
+            line-height: 12px;
+        }
+
+        @media (max-width: 768px) {
+            .compass-label {
+                font-size: 8px;
+            }
+        }
+
+        .compass-label.n { top: 2px; left: 50%; margin-left: -6px; }
+        .compass-label.s { bottom: 2px; left: 50%; margin-left: -6px; }
+        .compass-label.w { left: 2px; top: 50%; margin-top: -6px; }
+        .compass-label.e { right: 2px; top: 50%; margin-top: -6px; }
+
+        /* ═══════ WBS Timeline Panel ═══════ */
+        .wbs-panel {
+            position: absolute;
+            top: 72px;
+            right: 24px;
+            width: 240px;
+            max-height: calc(100vh - 160px);
+            overflow-y: auto;
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            pointer-events: auto;
+            font-size: 13px;
+            z-index: 12;
+        }
+        .wbs-header {
+            font-weight: 600;
+            font-size: 11px;
+            letter-spacing: 1.2px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+        .wbs-item {
+            padding: 5px 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+            color: var(--text-muted);
+        }
+        .wbs-item:hover {
+            background: rgba(255,255,255,0.06);
+        }
+        .wbs-item .num {
+            font-weight: 600;
+            min-width: 18px;
+            color: var(--text-muted);
+            font-size: 11px;
+        }
+        .wbs-item.active {
+            background: rgba(59,130,246,0.2);
+            color: #60a5fa;
+        }
+        .wbs-item.active .num { color: #60a5fa; }
+        .wbs-item.completed { color: var(--text-main); }
+        .wbs-item.completed .num { color: #22c55e; }
+        .wbs-item.future { opacity: 0.4; }
+
+        /* ═══════ Timeline Bar ═══════ */
+        .timeline-bar {
+            position: absolute;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(15,23,42,0.8);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 10px 20px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            pointer-events: auto;
+            z-index: 10;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+        }
+        .timeline-bar button {
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.12);
+            color: var(--text-main);
+            border-radius: 8px;
+            padding: 6px 14px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+        .timeline-bar button:hover { background: rgba(255,255,255,0.15); }
+        .timeline-slider-container {
+            flex: 1;
+            min-width: 140px;
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        .timeline-bar input[type=range] {
+            width: 100%;
+            height: 4px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: rgba(255,255,255,0.15);
+            border-radius: 2px;
+            outline: none;
+        }
+        .timeline-bar input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: var(--accent);
+            cursor: pointer;
+            border: 2px solid rgba(255,255,255,0.3);
+        }
+        .timeline-bar input[type=range]::-moz-range-thumb {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: var(--accent);
+            cursor: pointer;
+            border: 2px solid rgba(255,255,255,0.3);
+        }
+        .stage-label {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-main);
+            min-width: 100px;
+            text-align: center;
+            white-space: nowrap;
+        }
+        .stage-label .sub { color: var(--text-muted); font-weight: 400; font-size: 11px; }
+
+        /* ═══════ Stage Info Box ═══════ */
+        .stage-info {
+            position: absolute;
+            bottom: 80px;
+            right: 24px;
+            background: rgba(15,23,42,0.8);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 14px 18px;
+            pointer-events: none;
+            z-index: 10;
+            min-width: 160px;
+            font-size: 13px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.3);
+            display: none;
+        }
+        .stage-info .si-title { font-weight: 600; font-size: 14px; margin-bottom: 2px; }
+        .stage-info .si-item { color: var(--text-muted); font-size: 12px; line-height: 1.6; }
+        .stage-info .si-item strong { color: var(--text-main); }
+        .stage-info .highlight-badge {
+            display: inline-block;
+            background: rgba(59,130,246,0.25);
+            color: #60a5fa;
+            font-size: 10px;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 4px;
+            margin-top: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* ═══════ Top-Right Menu ═══════ */
+        .menu-btn {
+            position: absolute;
+            top: 24px;
+            right: 24px;
+            z-index: 30;
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background: rgba(15,23,42,0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            color: var(--text-main);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+            pointer-events: auto;
+        }
+        .menu-btn:hover { background: rgba(255,255,255,0.12); }
+        @media (max-width: 768px) {
+            .menu-btn { width: 36px; height: 36px; top: 16px; right: 16px; }
+            .menu-dropdown { top: 60px; right: 16px; min-width: 160px; }
+        }
+        .menu-dropdown {
+            position: absolute;
+            top: 72px;
+            right: 24px;
+            z-index: 30;
+            background: rgba(15,23,42,0.9);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 6px;
+            min-width: 180px;
+            display: none;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+            pointer-events: auto;
+        }
+        .menu-dropdown.open { display: block; }
+        .menu-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            color: var(--text-muted);
+            font-size: 14px;
+            transition: background 0.15s;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+        }
+        .menu-item:hover { background: rgba(255,255,255,0.06); color: var(--text-main); }
+        .menu-item.active { color: var(--accent); }
+        .menu-divider { height: 1px; background: var(--glass-border); margin: 4px 8px; }
+    </style>
+</head>
+<body>
+
+    <model-viewer 
+        id="mv"
+        camera-controls 
+        interaction-prompt="auto" 
+	exposure="1.2"
+        tone-mapping="aces"
+        shadow-intensity="2.5" 
+        shadow-softness="0.02"
+        environment-image="legacy"
+        environment-intensity="0.5"
+        ar
+        ar-modes="scene-viewer quick-look webxr"
+        ar-scale="auto"
+        ar-placement="floor"
+        scale="0.05 0.05 0.05"
+        camera-orbit="45deg 60deg auto">
+        
+        <!-- Custom AR Button -->
+        <button slot="ar-button" class="ar-button">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 3h6l-3 3"/>
+                <path d="M21 3h-6l3 3"/>
+                <path d="M3 21h6l-3-3"/>
+                <path d="M21 21h-6l3-3"/>
+                <rect x="7" y="7" width="10" height="10" rx="2"/>
+            </svg>
+            View in AR
+        </button>
+
+        <!-- Custom Loading Screen -->
+        <div slot="poster" id="poster">
+            <div class="loader"></div>
+            <div class="loading-text">Loading 3D BIM Model...</div>
+        </div>
+
+        <!-- Hotspots for CAD-style dimensioning -->
+        <div slot="hotspot-p1" id="hotspot-p1" data-position="0 0 0"></div>
+        <div slot="hotspot-p2" id="hotspot-p2" data-position="0 0 0"></div>
+        <div slot="hotspot-p3" id="hotspot-p3" data-position="0 0 0"></div>
+        <div slot="hotspot-p4" id="hotspot-p4" data-position="0 0 0"></div>
+    </model-viewer>
+
+    <!-- 2D Dimension Label Overlays (positioned dynamically in JS) -->
+    <div id="dim-badge-l" class="dim-badge">L: -</div>
+    <div id="dim-badge-w" class="dim-badge">W: -</div>
+    <div id="dim-badge-h" class="dim-badge">H: -</div>
+
+    <!-- SVG overlay for CAD dimension lines -->
+    <svg id="dimensionOverlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9999; display: none; overflow: visible;"></svg>
+
+    <!-- Presentation Vignette Blur -->
+    <div id="vignetteOverlay"></div>
+
+    <!-- Top-Right Menu -->
+    <div class="menu-btn" id="menuBtn" onclick="toggleMenu()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>
+        </svg>
+    </div>
+    <div class="menu-dropdown" id="menuDropdown">
+        <button class="menu-item" onclick="toggleStages()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+                <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+            </svg>
+            <span id="menuStagesLabel">Construction Stages</span>
+        </button>
+        <div class="menu-divider"></div>
+        <button class="menu-item" onclick="document.querySelector('model-viewer').activateAR()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 3h6l-3 3"/><path d="M21 3h-6l3 3"/>
+                <path d="M3 21h6l-3-3"/><path d="M21 21h-6l3-3"/>
+                <rect x="7" y="7" width="10" height="10" rx="2"/>
+            </svg>
+            AR View
+        </button>
+    </div>
+
+    <!-- Revit-style 3D View Cube Container -->
+    <div class="view-cube-container">
+        <!-- Home Button -->
+        <div class="home-btn" onclick="resetCameraView()" title="Home View">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+            </svg>
+        </div>
+
+        <div class="compass-ring" id="compassRing">
+            <div class="compass-label n">N</div>
+            <div class="compass-label e">E</div>
+            <div class="compass-label s">S</div>
+            <div class="compass-label w">W</div>
+        </div>
+        
+        <div class="cube-viewport">
+            <div class="cube" id="viewCube">
+                <!-- Faces -->
+                <div class="cube-face front" onclick="setCameraView('front')">FRONT</div>
+                <div class="cube-face back" onclick="setCameraView('back')">BACK</div>
+                <div class="cube-face top" onclick="setCameraView('top')">TOP</div>
+                <div class="cube-face bottom" onclick="setCameraView('bottom')">BOTTOM</div>
+                <div class="cube-face left" onclick="setCameraView('left')">LEFT</div>
+                <div class="cube-face right" onclick="setCameraView('right')">RIGHT</div>
+
+                <!-- Corners -->
+                <div class="cube-corner tfl" onclick="setCameraView('tfl')" title="Top Front Left"></div>
+                <div class="cube-corner tfr" onclick="setCameraView('tfr')" title="Top Front Right"></div>
+                <div class="cube-corner tbl" onclick="setCameraView('tbl')" title="Top Back Left"></div>
+                <div class="cube-corner tbr" onclick="setCameraView('tbr')" title="Top Back Right"></div>
+                <div class="cube-corner bfl" onclick="setCameraView('bfl')" title="Bottom Front Left"></div>
+                <div class="cube-corner bfr" onclick="setCameraView('bfr')" title="Bottom Front Right"></div>
+                <div class="cube-corner bbl" onclick="setCameraView('bbl')" title="Bottom Back Left"></div>
+                <div class="cube-corner bbr" onclick="setCameraView('bbr')" title="Bottom Back Right"></div>
+
+                <!-- Edges -->
+                <div class="cube-edge tf" onclick="setCameraView('tf')" title="Top Front"></div>
+                <div class="cube-edge tb" onclick="setCameraView('tb')" title="Top Back"></div>
+                <div class="cube-edge tl" onclick="setCameraView('tl')" title="Top Left"></div>
+                <div class="cube-edge tr" onclick="setCameraView('tr')" title="Top Right"></div>
+                <div class="cube-edge bf" onclick="setCameraView('bf')" title="Bottom Front"></div>
+                <div class="cube-edge bb" onclick="setCameraView('bb')" title="Bottom Back"></div>
+                <div class="cube-edge bl" onclick="setCameraView('bl')" title="Bottom Left"></div>
+                <div class="cube-edge br" onclick="setCameraView('br')" title="Bottom Right"></div>
+                <div class="cube-edge fl" onclick="setCameraView('fl')" title="Front Left"></div>
+                <div class="cube-edge fr" onclick="setCameraView('fr')" title="Front Right"></div>
+                <div class="cube-edge back-l" onclick="setCameraView('back-l')" title="Back Left"></div>
+                <div class="cube-edge back-r" onclick="setCameraView('back-r')" title="Back Right"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Site Toolbar -->
+    <div class="site-toolbar">
+        <a href="./" class="back-link" title="Back to all sites">←</a>
+        <span class="tag" id="siteTag">Navakerala Sadas</span>
+        <span class="title" id="siteTitle">Kakkathode Bridge</span>
+    </div>
+
+    <!-- WBS Timeline Panel -->
+    <div class="wbs-panel" id="wbsPanel" style="display:none;">
+        <div class="wbs-header">Construction Stages</div>
+        <div class="wbs-list" id="wbsList"></div>
+    </div>
+
+    <!-- Stage Info -->
+    <div class="stage-info" id="stageInfo">
+        <div class="si-title" id="siTitle">Finished Structure</div>
+        <div class="si-item" id="siSpec"></div>
+        <div class="si-item" id="siQty"></div>
+        <div><span class="highlight-badge" id="siBadge">Completed</span></div>
+    </div>
+
+    <!-- CAD HUD for Details -->
+    <div id="cadHud">
+        <div class="hud-header">
+            <span id="hudName">Component Name</span>
+            <div class="hud-close" onclick="deselectComponent()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </div>
+        </div>
+        <div class="hud-dims">
+            <div class="hud-row"><span>Length:</span><span id="hudL">-</span></div>
+            <div class="hud-row"><span>Width:</span><span id="hudW">-</span></div>
+            <div class="hud-row"><span>Height:</span><span id="hudH">-</span></div>
+        </div>
+        <div class="hud-row">
+            <span>Material:</span>
+            <span id="hudMat">-</span>
+        </div>
+        <div class="hud-estimate" id="hudEst">
+            DPR Estimate: -
+        </div>
+    </div>
+
+    <!-- Firebase Initialization -->
+    <script type="module">
+        import { initializeApp } from "firebase/app";
+        import { getAnalytics } from "firebase/analytics";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyB-CzQXlYz7vL-S6FKoRayfQO826M1gtQQ",
+            authDomain: "bim-app-203fe.firebaseapp.com",
+            projectId: "bim-app-203fe",
+            storageBucket: "bim-app-203fe.firebasestorage.app",
+            messagingSenderId: "389703958317",
+            appId: "1:389703958317:web:9d4b132726d61663411da4",
+            measurementId: "G-MC7QRGG0DK"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app);
+
+        window.__firebaseApp = app;
+        window.__firebaseAnalytics = analytics;
+    </script>
+
+    <script>(async () => {
+        const params = new URLSearchParams(location.search);
+        const siteId = params.get('site') || 'kakathode-bridge';
+        const siteRes = await fetch('data/sites.json');
+        const siteData = await siteRes.json();
+        const siteConfig = siteData.sites.find(s => s.id === siteId);
+        if (!siteConfig) { document.body.innerHTML = 'Site not found'; return; }
+        document.title = siteConfig.name + ' — BIM Viewer';
+        document.getElementById('siteTag').textContent = siteConfig.tag;
+        document.getElementById('siteTitle').textContent = siteConfig.name;
+        const modelViewer = document.querySelector('model-viewer');
+        modelViewer.src = siteConfig.modelUrl;
+
+        const viewCube = document.getElementById('viewCube');
+        const compassRing = document.getElementById('compassRing');
+        const origColors = {};  // saved per-material baseColorFactor from GLB
+
+        // Home View Reset
+        window.resetCameraView = function() {
+            modelViewer.cameraOrbit = '45deg 60deg auto';
+        };
+
+        // Smooth camera transitions for View Cube faces, corners, and edges
+        window.setCameraView = function(view) {
+            let orbit = '';
+            switch(view) {
+                // Faces
+                case 'top':     orbit = '0deg 0.1deg auto'; break;
+                case 'bottom':  orbit = '0deg 179.9deg auto'; break;
+                case 'front':   orbit = '0deg 90deg auto'; break;
+                case 'back':    orbit = '180deg 90deg auto'; break;
+                case 'left':    orbit = '-90deg 90deg auto'; break;
+                case 'right':   orbit = '90deg 90deg auto'; break;
+                
+                // Corners (Isometric Views)
+                case 'tfl':     orbit = '-45deg 45deg auto'; break;
+                case 'tfr':     orbit = '45deg 45deg auto'; break;
+                case 'tbl':     orbit = '-135deg 45deg auto'; break;
+                case 'tbr':     orbit = '135deg 45deg auto'; break;
+                case 'bfl':     orbit = '-45deg 135deg auto'; break;
+                case 'bfr':     orbit = '45deg 135deg auto'; break;
+                case 'bbl':     orbit = '-135deg 135deg auto'; break;
+                case 'bbr':     orbit = '135deg 135deg auto'; break;
+
+                // Edges
+                case 'tf':      orbit = '0deg 45deg auto'; break;
+                case 'tb':      orbit = '180deg 45deg auto'; break;
+                case 'tl':      orbit = '-90deg 45deg auto'; break;
+                case 'tr':      orbit = '90deg 45deg auto'; break;
+                case 'bf':      orbit = '0deg 135deg auto'; break;
+                case 'bb':      orbit = '180deg 135deg auto'; break;
+                case 'bl':      orbit = '-90deg 135deg auto'; break;
+                case 'br':      orbit = '90deg 135deg auto'; break;
+                case 'fl':      orbit = '-45deg 90deg auto'; break;
+                case 'fr':      orbit = '45deg 90deg auto'; break;
+                case 'back-l':  orbit = '-135deg 90deg auto'; break;
+                case 'back-r':  orbit = '135deg 90deg auto'; break;
+            }
+            if (orbit) {
+                modelViewer.cameraOrbit = orbit;
+            }
+        };
+
+        // Sync view cube and compass ring rotation with model-viewer camera angle
+        modelViewer.addEventListener('camera-change', () => {
+            const orbit = modelViewer.getCameraOrbit();
+            
+            // Convert theta and phi from radians to degrees
+            const thetaDeg = (orbit.theta * 180) / Math.PI;
+            const phiDeg = (orbit.phi * 180) / Math.PI;
+            
+            // Rotate cube in full 3D
+            viewCube.style.transform = `rotateX(${phiDeg - 90}deg) rotateY(${-thetaDeg}deg)`;
+            
+            // Spin compass ring horizontally
+            compassRing.style.transform = `rotateX(65deg) rotateZ(${-thetaDeg}deg)`;
+        });
+
+        // ══════════════════════════════════════════════════════════════
+        //  Measurements / CAD-Style 3D Ruler Mode
+        // ══════════════════════════════════════════════════════════════
+        let measurementModeActive = true; // Always on
+        let activeComponentKey = null;
+
+                const db = siteConfig.components;
+
+        // Ruler is always active — mark the button as permanently active
+        window.toggleMeasurementMode = function() { /* no-op, always on */ };
+        window.toggleMenu = function() {
+            document.getElementById('menuDropdown').classList.toggle('open');
+        };
+        window.toggleStages = function() {
+            const panel = document.getElementById('wbsPanel');
+            const bar = document.getElementById('timelineBar');
+            const info = document.getElementById('stageInfo');
+            const label = document.getElementById('menuStagesLabel');
+            const isHidden = panel.style.display === 'none' || !panel.style.display;
+            panel.style.display = isHidden ? 'block' : 'none';
+            bar.style.display = isHidden ? 'flex' : 'none';
+            info.style.display = isHidden ? 'block' : 'none';
+            label.textContent = isHidden ? 'Hide Stages' : 'Construction Stages';
+            // Close menu after selecting
+            document.getElementById('menuDropdown').classList.remove('open');
+            if (isHidden && document.getElementById('wbsList').children.length === 0) {
+                renderWBS();
+            }
+        };
+        // Close menu on click outside
+        document.addEventListener('click', (e) => {
+            const btn = document.getElementById('menuBtn');
+            const dd = document.getElementById('menuDropdown');
+            if (!btn.contains(e.target) && !dd.contains(e.target)) {
+                dd.classList.remove('open');
+            }
+        });
+        modelViewer.classList.add('measure-mode-active');
+
+        window.deselectComponent = function() {
+            activeComponentKey = null;
+            document.getElementById('cadHud').style.display = 'none';
+            document.getElementById('dimensionOverlay').style.display = 'none';
+            
+            // Hide 2D dimension badges
+            ['dim-badge-l', 'dim-badge-w', 'dim-badge-h'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.style.display = 'none';
+            });
+            ['hotspot-p1', 'hotspot-p2', 'hotspot-p3', 'hotspot-p4'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.removeAttribute('data-position');
+            });
+            
+            if (modelViewer.model) {
+                modelViewer.model.materials.forEach(m => {
+                    m.setAlphaMode('OPAQUE');
+                    const orig = origColors[m.name];
+                    if (orig) {
+                        m.pbrMetallicRoughness.setBaseColorFactor(orig);
+                    }
+                });
+            }
+        };
+
+        modelViewer.addEventListener('click', (event) => {
+            if (!measurementModeActive) return;
+            const material = modelViewer.materialFromPoint(event.clientX, event.clientY);
+            const matName = material ? material.name : null;
+            console.log('Click material:', JSON.stringify(matName), 'In DB:', matName ? !!db[matName] : false);
+            if (material && matName && db[matName]) {
+                try {
+                activeComponentKey = matName;
+                const comp = db[activeComponentKey];
+
+                // Update hotspot positions in 3D space
+                document.getElementById('hotspot-p1').setAttribute('data-position', comp.p1.join(' '));
+                document.getElementById('hotspot-p2').setAttribute('data-position', comp.p2.join(' '));
+                document.getElementById('hotspot-p3').setAttribute('data-position', comp.p3.join(' '));
+                document.getElementById('hotspot-p4').setAttribute('data-position', comp.p4.join(' '));
+
+                // Update HUD dimensions and details
+                document.getElementById('hudName').textContent = comp.n;
+                document.getElementById('hudL').textContent = comp.l;
+                document.getElementById('hudW').textContent = comp.b;
+                document.getElementById('hudH').textContent = comp.h;
+                document.getElementById('hudMat').textContent = comp.mat;
+                document.getElementById('hudEst').textContent = 'DPR Estimate: ' + comp.est;
+                document.getElementById('cadHud').style.display = 'flex';
+
+                // Show only the LENGTH dimension badge in the 3D view
+                const dimL = document.getElementById('dim-badge-l');
+                dimL.textContent = comp.l;
+                dimL.style.display = 'block';
+                document.getElementById('dim-badge-w').style.display = 'none';
+                document.getElementById('dim-badge-h').style.display = 'none';
+
+                // Smooth camera transition: Target the component center and zoom radius
+                const currentOrbit = modelViewer.getCameraOrbit();
+                modelViewer.cameraTarget = comp.target;
+                modelViewer.cameraOrbit = `${currentOrbit.theta}rad ${currentOrbit.phi}rad ${comp.r}`;
+
+                // (Vignette disabled — no blur overlay)
+
+                // Ghost out non-selected meshes; restore selected material to original color
+                modelViewer.model.materials.forEach(m => {
+                    if (m.name === material.name) {
+                        m.setAlphaMode('OPAQUE');
+                        const orig = origColors[m.name];
+                        if (orig) {
+                            m.pbrMetallicRoughness.setBaseColorFactor(orig);
+                        }
+                    } else {
+                        m.setAlphaMode('BLEND');
+                        m.pbrMetallicRoughness.setBaseColorFactor([1, 1, 1, 0.08]);
+                    }
+                });
+
+                // Force an early dimension draw after hotspots have repositioned
+                setTimeout(updateDimensions, 80);
+            } catch (e) {
+                console.error('Click handler error:', e);
+            }
+            } else {
+                // If clicked empty space, reset selection
+                deselectComponent();
+            }
+        });
+
+        // ══════════════════════════════════════════════════════════════
+        //  CAD SVG Dimension Lines Engine
+        //  Projects 3D world coords → 2D screen coords using camera orbit
+        //  (bypasses model-viewer's shadow-DOM hotspot system entirely)
+        // ══════════════════════════════════════════════════════════════
+        function initSVGDefs(overlay) {
+            if (overlay.querySelector('defs')) return;
+            const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+            const marker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+            marker.setAttribute('id', 'arr');
+            marker.setAttribute('viewBox', '0 0 10 10');
+            marker.setAttribute('refX', '5');
+            marker.setAttribute('refY', '5');
+            marker.setAttribute('markerWidth', '5');
+            marker.setAttribute('markerHeight', '5');
+            marker.setAttribute('orient', 'auto-start-reverse');
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            path.setAttribute('d', 'M 0 2 L 10 5 L 0 8 z');
+            path.setAttribute('fill', '#60a5fa');
+            marker.appendChild(path);
+            defs.appendChild(marker);
+            overlay.appendChild(defs);
+        }
+
+        // ── Simple 4×4 matrix utilities (column-major, like WebGL) ──
+        function mat4Identity() {
+            return new Float64Array([
+                1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1
+            ]);
+        }
+
+        function mat4Multiply(a, b) {
+            const out = new Float64Array(16);
+            for (let col = 0; col < 4; col++) {
+                for (let row = 0; row < 4; row++) {
+                    let sum = 0;
+                    for (let k = 0; k < 4; k++) {
+                        sum += a[k * 4 + row] * b[col * 4 + k];
+                    }
+                    out[col * 4 + row] = sum;
+                }
+            }
+            return out;
+        }
+
+        function mat4LookAt(eyeX, eyeY, eyeZ, targetX, targetY, targetZ, upX, upY, upZ) {
+            // forward = normalize(target - eye)
+            let fx = targetX - eyeX, fy = targetY - eyeY, fz = targetZ - eyeZ;
+            const fLen = Math.hypot(fx, fy, fz);
+            fx /= fLen; fy /= fLen; fz /= fLen;
+
+            // right = normalize(cross(forward, up))
+            let rx = fy * upZ - fz * upY;
+            let ry = fz * upX - fx * upZ;
+            let rz = fx * upY - fy * upX;
+            const rLen = Math.hypot(rx, ry, rz);
+            rx /= rLen; ry /= rLen; rz /= rLen;
+
+            // up = cross(right, forward)
+            let ux = ry * fz - rz * fy;
+            let uy = rz * fx - rx * fz;
+            let uz = rx * fy - ry * fx;
+
+            // Column-major view matrix:
+            // col 0 = [right.x, up.x, -forward.x, 0]
+            // col 1 = [right.y, up.y, -forward.y, 0]
+            // col 2 = [right.z, up.z, -forward.z, 0]
+            // col 3 = [-dot(right, eye), -dot(up, eye), dot(forward, eye), 1]
+            return new Float64Array([
+                rx, ux, -fx, 0,
+                ry, uy, -fy, 0,
+                rz, uz, -fz, 0,
+                -(rx * eyeX + ry * eyeY + rz * eyeZ),
+                -(ux * eyeX + uy * eyeY + uz * eyeZ),
+                fx * eyeX + fy * eyeY + fz * eyeZ,
+                1
+            ]);
+        }
+
+        function mat4Perspective(fovDeg, aspect, near, far) {
+            const f = 1 / Math.tan((fovDeg * Math.PI) / 180 / 2);
+            const nf = 1 / (near - far);
+            return new Float64Array([
+                f / aspect, 0, 0, 0,
+                0, f, 0, 0,
+                0, 0, (far + near) * nf, -1,
+                0, 0, 2 * far * near * nf, 0
+            ]);
+        }
+
+        function mat4TransformPoint(m, x, y, z) {
+            const w = m[3] * x + m[7] * y + m[11] * z + m[15];
+            if (Math.abs(w) < 1e-10) return null;
+            return {
+                x: (m[0] * x + m[4] * y + m[8]  * z + m[12]) / w,
+                y: (m[1] * x + m[5] * y + m[9]  * z + m[13]) / w,
+                z: (m[2] * x + m[6] * y + m[10] * z + m[14]) / w
+            };
+        }
+
+        // ── Project a 3D world point to 2D screen coordinates ──
+        // The model-viewer applies scale="0.05 0.05 0.05" to the model,
+        // so we must scale world coords to match the camera's space.
+        function getModelScale() {
+            const s = modelViewer.getAttribute('scale');
+            if (s) { const p = s.split(' ').map(parseFloat); return p[0] || 1; }
+            return 1;
+        }
+        function project3DTo2D(wx, wy, wz) {
+            const scale = getModelScale();
+            wx *= scale; wy *= scale; wz *= scale;
+
+            const orbit = modelViewer.getCameraOrbit();
+            const targetStr = modelViewer.cameraTarget;
+            const targetParts = targetStr.split(' ').map(s => parseFloat(s));
+            const tx = targetParts[0], ty = targetParts[1], tz = targetParts[2];
+
+            const theta = orbit.theta;
+            const phi = orbit.phi;
+            const radius = orbit.radius;
+
+            // Camera position from spherical orbit (Three.js convention)
+            const sinP = Math.sin(phi), cosP = Math.cos(phi);
+            const sinT = Math.sin(theta), cosT = Math.cos(theta);
+            const ex = tx + radius * sinP * sinT;
+            const ey = ty + radius * cosP;
+            const ez = tz + radius * sinP * cosT;
+
+            const vr = modelViewer.getBoundingClientRect();
+            const aspect = vr.width / vr.height;
+            const fov = modelViewer.getFieldOfView ? modelViewer.getFieldOfView() : 45;
+
+            const view = mat4LookAt(ex, ey, ez, tx, ty, tz, 0, 1, 0);
+            const proj = mat4Perspective(fov, aspect, 0.1, 1000);
+            const vp = mat4Multiply(proj, view);
+
+            const ndc = mat4TransformPoint(vp, wx, wy, wz);
+            if (!ndc) return null;
+
+            return {
+                x: (ndc.x + 1) / 2 * vr.width + vr.left,
+                y: (1 - ndc.y) / 2 * vr.height + vr.top
+            };
+        }
+
+        function svgEl(overlay, tag, attrs) {
+            const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+            for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
+            overlay.appendChild(el);
+            return el;
+        }
+
+        function drawDimLine(overlay, ptA, ptB, badge, W, H) {
+            if (!ptA || !ptB) { if (badge) badge.style.display = 'none'; return; }
+            const dx = ptB.x - ptA.x, dy = ptB.y - ptA.y;
+            const len = Math.hypot(dx, dy);
+            if (len < 4) { if (badge) badge.style.display = 'none'; return; }
+
+            const nx = -dy / len, ny = dx / len;
+            const cx = (ptA.x + ptB.x) / 2, cy = (ptA.y + ptB.y) / 2;
+            const sign = (nx * (cx - W / 2) + ny * (cy - H / 2)) >= 0 ? 1 : -1;
+            const OFFSET = 40, TICK = 12;
+
+            const ox = sign * nx * OFFSET, oy = sign * ny * OFFSET;
+            const ex = sign * nx * (OFFSET + TICK), ey = sign * ny * (OFFSET + TICK);
+
+            svgEl(overlay, 'line', { x1: ptA.x, y1: ptA.y, x2: ptA.x + ex, y2: ptA.y + ey,
+                stroke: 'rgba(148,163,184,0.55)', 'stroke-width': '1.2', 'stroke-dasharray': '5 3' });
+            svgEl(overlay, 'line', { x1: ptB.x, y1: ptB.y, x2: ptB.x + ex, y2: ptB.y + ey,
+                stroke: 'rgba(148,163,184,0.55)', 'stroke-width': '1.2', 'stroke-dasharray': '5 3' });
+
+            svgEl(overlay, 'line', {
+                x1: ptA.x + ox, y1: ptA.y + oy, x2: ptB.x + ox, y2: ptB.y + oy,
+                stroke: '#60a5fa', 'stroke-width': '1.8',
+                'marker-start': 'url(#arr)', 'marker-end': 'url(#arr)'
+            });
+
+            if (badge) {
+                badge.style.display = 'block';
+                badge.style.left = ((ptA.x + ptB.x) / 2 + ox) + 'px';
+                badge.style.top  = ((ptA.y + ptB.y) / 2 + oy) + 'px';
+            }
+        }
+
+        function updateDimensions() {
+            const overlay = document.getElementById('dimensionOverlay');
+            if (!overlay) return;
+
+            if (!measurementModeActive || !activeComponentKey) {
+                overlay.style.display = 'none';
+                ['dim-badge-l', 'dim-badge-w', 'dim-badge-h'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.style.display = 'none';
+                });
+                return;
+            }
+
+            const comp = db[activeComponentKey];
+            if (!comp) return;
+
+            // Project the 4 anchor points directly from 3D world → 2D screen
+            const p1 = project3DTo2D(comp.p1[0], comp.p1[1], comp.p1[2]);
+            const p2 = project3DTo2D(comp.p2[0], comp.p2[1], comp.p2[2]);
+
+            if (!p1 || !p2) return;
+
+            const spread = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+            if (spread < 5) return;
+
+            overlay.style.display = 'block';
+
+            const W = window.innerWidth, H = window.innerHeight;
+            overlay.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+
+            overlay.innerHTML = '';
+            initSVGDefs(overlay);
+
+            const lL = document.getElementById('dim-badge-l');
+
+            drawDimLine(overlay, p1, p2, lL, W, H);
+        }
+
+        modelViewer.addEventListener('camera-change', () => {
+            if (measurementModeActive && activeComponentKey) updateDimensions();
+        });
+
+        function animLoop() {
+            try {
+                if (measurementModeActive && activeComponentKey) updateDimensions();
+            } catch (e) { /* silent */ }
+            requestAnimationFrame(animLoop);
+        }
+        requestAnimationFrame(animLoop);
+
+        // ══════════════════════════════════════════════════════════
+        //  4D BIM WBS Timeline Logic
+        // ══════════════════════════════════════════════════════════
+        const stages = siteConfig.stages;
+        let currentStage = siteConfig.defaultStage;
+        document.getElementById('stageSlider').max = stages.length;
+        document.getElementById('stageSlider').value = currentStage;
+        const s0 = getStage(currentStage);
+        document.getElementById('stageLabel').innerHTML = 'Stage ' + currentStage + ' / ' + stages.length + ' <span class="sub">' + s0.name + '</span>';
+
+        // WBS: save orig baseColorFactor on load (for restore after highlight)
+        modelViewer.addEventListener('load', () => {
+            if (!modelViewer.model) return;
+            modelViewer.model.materials.forEach(m => {
+                const f = m.pbrMetallicRoughness.baseColorFactor;
+                origColors[m.name] = [f[0], f[1], f[2], f[3]];
+            });
+            renderWBS();
+            updateStageVisibility();
+            updateStageInfo();
+        });
+
+        // If model already loaded (cache), ensure visibility runs
+        setTimeout(() => {
+            if (modelViewer.model && Object.keys(origColors).length > 0) {
+                renderWBS();
+                updateStageVisibility();
+                updateStageInfo();
+            }
+        }, 500);
+
+        function getStage(stageNum) {
+            return stages.find(s => s.id === stageNum) || stages[stages.length-1];
+        }
+
+        function setStage(num) {
+            num = Math.max(1, Math.min(stages.length, Number(num)));
+            if (num === currentStage) return;
+            if (activeComponentKey) deselectComponent();
+            currentStage = num;
+            renderWBS();
+            updateStageVisibility();
+            updateStageInfo();
+            document.getElementById('stageInfo').style.display = 'block';
+            document.getElementById('stageSlider').value = num;
+            const s = getStage(num);
+            document.getElementById('stageLabel').innerHTML = 'Stage ' + num + ' / ' + stages.length + ' <span class="sub">' + s.name + '</span>';
+            // Flash feedback
+            const el = document.getElementById('stageInfo');
+            el.classList.remove('stage-flash');
+            void el.offsetWidth;
+            el.classList.add('stage-flash');
+        }
+
+        window.setStage = setStage;
+        window.prevStage = () => setStage(currentStage - 1);
+        window.nextStage = () => setStage(currentStage + 1);
+
+        function renderWBS() {
+            const list = document.getElementById('wbsList');
+            if (!list) return;
+            list.innerHTML = '';
+            stages.forEach(s => {
+                const div = document.createElement('div');
+                div.className = 'wbs-item';
+                if (s.id < currentStage) div.classList.add('completed');
+                else if (s.id === currentStage) div.classList.add('active');
+                else div.classList.add('future');
+                div.innerHTML = '<span class="num">' + s.id + '</span>' + s.name;
+                div.onclick = () => setStage(s.id);
+                list.appendChild(div);
+            });
+        }
+
+        function updateStageVisibility() {
+            if (!modelViewer.model) return;
+            const stage = getStage(currentStage);
+            modelViewer.model.materials.forEach(m => {
+                const stageId = stages.findIndex(s => s.comps.includes(m.name)) + 1;
+                const isPast = stageId > 0 && stageId < currentStage;
+                const isCurrent = stageId === currentStage;
+                const isFuture = stageId > currentStage;
+                const hasNoStage = stageId === 0;
+
+                if (hasNoStage) {
+                    // Components not in any stage (misc, etc) — visible always
+                    m.setAlphaMode('OPAQUE');
+                    const orig = origColors[m.name];
+                    if (orig) m.pbrMetallicRoughness.setBaseColorFactor(orig);
+                } else if (isFuture) {
+                    m.setAlphaMode('BLEND');
+                    m.pbrMetallicRoughness.setBaseColorFactor([1, 1, 1, 0.04]);
+                } else if (isCurrent) {
+                    m.setAlphaMode('OPAQUE');
+                    // Slight blue highlight
+                    const orig = origColors[m.name];
+                    if (orig) {
+                        const h = [
+                            Math.min(orig[0] + 0.08, 1),
+                            Math.min(orig[1] + 0.05, 1),
+                            Math.min(orig[2] + 0.15, 1),
+                            1
+                        ];
+                        m.pbrMetallicRoughness.setBaseColorFactor(h);
+                    }
+                } else {
+                    // Past — normal
+                    m.setAlphaMode('OPAQUE');
+                    const orig = origColors[m.name];
+                    if (orig) m.pbrMetallicRoughness.setBaseColorFactor(orig);
+                }
+            });
+        }
+
+        function updateStageInfo() {
+            const s = getStage(currentStage);
+            document.getElementById('siTitle').textContent = s.name;
+            document.getElementById('siSpec').innerHTML = '<strong>Item:</strong> ' + s.item + '<br><strong>Spec:</strong> ' + s.spec;
+            document.getElementById('siQty').innerHTML = '<strong>Quantity:</strong> ' + s.qty;
+
+            if (currentStage < stages.length) {
+                document.getElementById('siBadge').textContent = 'In Progress — Stage ' + currentStage;
+            } else {
+                document.getElementById('siBadge').textContent = 'Completed';
+            }
+        }
+
+        // Override deselectComponent to re-apply stage visibility after restoring colors
+        const _origDeselect = window.deselectComponent;
+        window.deselectComponent = function() {
+            _origDeselect();
+            updateStageVisibility();
+            updateStageInfo();
+        };
+    })();</script>
+
+    <!-- WBS Timeline Bar -->
+    <div class="timeline-bar" id="timelineBar" style="display:none;">
+        <button onclick="prevStage()">◀</button>
+        <div class="timeline-slider-container">
+            <input type="range" id="stageSlider" min="1" max="1" value="1" oninput="setStage(this.value)">
+        </div>
+        <button onclick="nextStage()">▶</button>
+        <div class="stage-label" id="stageLabel">Stage 15 / 15 <span class="sub">Complete</span></div>
+    </div>
+
+</body>
+</html>
