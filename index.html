@@ -371,14 +371,17 @@
         }
 
         /* Dimensioning Hotspots and CAD HUD Styles */
+        /* visibility:hidden + 8x8px = model-viewer positions them correctly
+           and getBoundingClientRect() returns real screen coords.
+           opacity:0 + 1x1px caused degenerate rects → dimension lines never drew. */
         #hotspot-p1, #hotspot-p2, #hotspot-p3, #hotspot-p4 {
             display: block !important;
-            opacity: 0 !important;
+            visibility: hidden !important;
             pointer-events: none !important;
-            width: 1px !important;
-            height: 1px !important;
+            width: 8px !important;
+            height: 8px !important;
             padding: 0 !important;
-            margin: 0 !important;
+            margin: -4px !important;
             border: none !important;
         }
 
@@ -928,10 +931,10 @@
         </div>
 
         <!-- Hotspots for CAD-style dimensioning -->
-        <div slot="hotspot-p1" id="hotspot-p1" data-position="0m 0m 0m"></div>
-        <div slot="hotspot-p2" id="hotspot-p2" data-position="0m 0m 0m"></div>
-        <div slot="hotspot-p3" id="hotspot-p3" data-position="0m 0m 0m"></div>
-        <div slot="hotspot-p4" id="hotspot-p4" data-position="0m 0m 0m"></div>
+        <div slot="hotspot-p1" id="hotspot-p1" data-position="0 0 0"></div>
+        <div slot="hotspot-p2" id="hotspot-p2" data-position="0 0 0"></div>
+        <div slot="hotspot-p3" id="hotspot-p3" data-position="0 0 0"></div>
+        <div slot="hotspot-p4" id="hotspot-p4" data-position="0 0 0"></div>
     </model-viewer>
 
     <!-- 2D Dimension Label Overlays (positioned dynamically in JS) -->
@@ -1347,11 +1350,11 @@
                 activeComponentKey = material.name;
                 const comp = db[activeComponentKey];
 
-                // Update hotspot positions in 3D space (with 'm' suffix for model-viewer)
-                document.getElementById('hotspot-p1').setAttribute('data-position', comp.p1.map(v => v + 'm').join(' '));
-                document.getElementById('hotspot-p2').setAttribute('data-position', comp.p2.map(v => v + 'm').join(' '));
-                document.getElementById('hotspot-p3').setAttribute('data-position', comp.p3.map(v => v + 'm').join(' '));
-                document.getElementById('hotspot-p4').setAttribute('data-position', comp.p4.map(v => v + 'm').join(' '));
+                // Update hotspot positions in 3D space
+                document.getElementById('hotspot-p1').setAttribute('data-position', comp.p1.join(' '));
+                document.getElementById('hotspot-p2').setAttribute('data-position', comp.p2.join(' '));
+                document.getElementById('hotspot-p3').setAttribute('data-position', comp.p3.join(' '));
+                document.getElementById('hotspot-p4').setAttribute('data-position', comp.p4.join(' '));
 
                 // Update 2D dimension badge texts
                 const dimL = document.getElementById('dim-badge-l');
@@ -1389,6 +1392,9 @@
                         m.pbrMetallicRoughness.setBaseColorFactor([1, 1, 1, 0.08]);
                     }
                 });
+
+                // Force an early dimension draw after hotspots have repositioned
+                setTimeout(updateDimensions, 80);
             } else {
                 // If clicked empty space, reset selection
                 deselectComponent();
@@ -1398,7 +1404,7 @@
         // ══════════════════════════════════════════════════════════════
         //  CAD SVG Dimension Lines Engine
         // ══════════════════════════════════════════════════════════════
-        function initDefs(overlay) {
+        function initSVGDefs(overlay) {
             if (overlay.querySelector('defs')) return;
             const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
             const marker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
@@ -1417,123 +1423,103 @@
             overlay.appendChild(defs);
         }
 
-        function updateDimensions() {
-            try {
-                if (!measurementModeActive || !activeComponentKey) {
-                    document.getElementById('dimensionOverlay').style.display = 'none';
-                    ['dim-badge-l', 'dim-badge-w', 'dim-badge-h'].forEach(id => {
-                        const el = document.getElementById(id);
-                        if (el) el.style.display = 'none';
-                    });
-                    return;
-                }
-                const comp = db[activeComponentKey];
-                if (!comp) return;
+        function getHotspotScreenPos(id) {
+            const el = document.getElementById(id);
+            if (!el) return null;
+            const r = el.getBoundingClientRect();
+            if (r.width === 0 && r.height === 0 && r.left === 0 && r.top === 0) return null;
+            return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+        }
 
-                const overlay = document.getElementById('dimensionOverlay');
-                if (!overlay) return;
-                overlay.style.display = 'block';
+        function svgEl(overlay, tag, attrs) {
+            const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+            for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
+            overlay.appendChild(el);
+            return el;
+        }
 
-                // Clear previous lines (keep defs if already initialized)
-                while (overlay.children.length > 0) {
-                    const child = overlay.lastChild;
-                    if (child.nodeType === 1 && child.tagName === 'defs') break;
-                    overlay.removeChild(child);
-                }
+        function drawDimLine(overlay, ptA, ptB, badge, W, H) {
+            if (!ptA || !ptB) { if (badge) badge.style.display = 'none'; return; }
+            const dx = ptB.x - ptA.x, dy = ptB.y - ptA.y;
+            const len = Math.hypot(dx, dy);
+            if (len < 4) { if (badge) badge.style.display = 'none'; return; }
 
-                const vr = modelViewer.getBoundingClientRect();
-                const W = vr.width, H = vr.height;
+            const nx = -dy / len, ny = dx / len;
+            const cx = (ptA.x + ptB.x) / 2, cy = (ptA.y + ptB.y) / 2;
+            const sign = (nx * (cx - W / 2) + ny * (cy - H / 2)) >= 0 ? 1 : -1;
+            const OFFSET = 40, TICK = 12;
 
-                // Set viewBox to match viewport pixel dimensions
-                overlay.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
-                overlay.setAttribute('width', W);
-                overlay.setAttribute('height', H);
+            const ox = sign * nx * OFFSET, oy = sign * ny * OFFSET;
+            const ex = sign * nx * (OFFSET + TICK), ey = sign * ny * (OFFSET + TICK);
 
-                // Ensure defs exist (namespace-safe)
-                initDefs(overlay);
+            svgEl(overlay, 'line', { x1: ptA.x, y1: ptA.y, x2: ptA.x + ex, y2: ptA.y + ey,
+                stroke: 'rgba(148,163,184,0.55)', 'stroke-width': '1.2', 'stroke-dasharray': '5 3' });
+            svgEl(overlay, 'line', { x1: ptB.x, y1: ptB.y, x2: ptB.x + ex, y2: ptB.y + ey,
+                stroke: 'rgba(148,163,184,0.55)', 'stroke-width': '1.2', 'stroke-dasharray': '5 3' });
 
-                function getScreenPos(id) {
-                    const el = document.getElementById(id);
-                    if (!el) return null;
-                    const r = el.getBoundingClientRect();
-                    return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
-                }
+            svgEl(overlay, 'line', {
+                x1: ptA.x + ox, y1: ptA.y + oy, x2: ptB.x + ox, y2: ptB.y + oy,
+                stroke: '#60a5fa', 'stroke-width': '1.8',
+                'marker-start': 'url(#arr)', 'marker-end': 'url(#arr)'
+            });
 
-                const p1 = getScreenPos('hotspot-p1');
-                const p2 = getScreenPos('hotspot-p2');
-                const p3 = getScreenPos('hotspot-p3');
-                const p4 = getScreenPos('hotspot-p4');
-
-                if (!p1 || !p2 || !p3 || !p4) return;
-                const spread = Math.hypot(p2.x-p1.x, p2.y-p1.y) + Math.hypot(p3.x-p1.x, p3.y-p1.y);
-                if (spread < 5) return;
-
-                const OFFSET = 44;
-                const XTICK  = 10;
-
-                function svgEl(tag, attrs) {
-                    const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
-                    for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
-                    overlay.appendChild(el);
-                }
-
-                function drawDim(ptA, ptB, badge) {
-                    if (!ptA || !ptB) { badge.style.display = 'none'; return; }
-                    const dx = ptB.x - ptA.x, dy = ptB.y - ptA.y;
-                    const len = Math.hypot(dx, dy);
-                    if (len < 3) { badge.style.display = 'none'; return; }
-
-                    const nx = -dy / len, ny = dx / len;
-                    const cx = (ptA.x + ptB.x) / 2, cy = (ptA.y + ptB.y) / 2;
-                    const pcx = vr.left + W / 2, pcy = vr.top + H / 2;
-                    const sign = (nx * (cx - pcx) + ny * (cy - pcy)) >= 0 ? 1 : -1;
-
-                    const ox = sign * nx * OFFSET, oy = sign * ny * OFFSET;
-                    const ex = sign * nx * (OFFSET + XTICK), ey = sign * ny * (OFFSET + XTICK);
-
-                    svgEl('line', { x1: ptA.x, y1: ptA.y, x2: ptA.x + ex, y2: ptA.y + ey,
-                        stroke: 'rgba(148,163,184,0.5)', 'stroke-width': '1', 'stroke-dasharray': '4 3' });
-                    svgEl('line', { x1: ptB.x, y1: ptB.y, x2: ptB.x + ex, y2: ptB.y + ey,
-                        stroke: 'rgba(148,163,184,0.5)', 'stroke-width': '1', 'stroke-dasharray': '4 3' });
-
-                    svgEl('line', {
-                        x1: ptA.x + ox, y1: ptA.y + oy, x2: ptB.x + ox, y2: ptB.y + oy,
-                        stroke: '#60a5fa', 'stroke-width': '1.5',
-                        'marker-start': 'url(#arr)', 'marker-end': 'url(#arr)'
-                    });
-
-                    badge.style.display = 'block';
-                    badge.style.left = ((ptA.x + ptB.x) / 2 + ox) + 'px';
-                    badge.style.top  = ((ptA.y + ptB.y) / 2 + oy) + 'px';
-                }
-
-                const lL = document.getElementById('dim-badge-l');
-                const lW = document.getElementById('dim-badge-w');
-                const lH = document.getElementById('dim-badge-h');
-
-                drawDim(p1, p2, lL);
-                drawDim(p1, p3, lW);
-                drawDim(p1, p4, lH);
-            } catch (e) {
-                console.warn('updateDimensions error:', e);
+            if (badge) {
+                badge.style.display = 'block';
+                badge.style.left = ((ptA.x + ptB.x) / 2 + ox) + 'px';
+                badge.style.top  = ((ptA.y + ptB.y) / 2 + oy) + 'px';
             }
         }
 
+        function updateDimensions() {
+            const overlay = document.getElementById('dimensionOverlay');
+            if (!overlay) return;
 
-        // Run dimensions update on camera movement
+            if (!measurementModeActive || !activeComponentKey) {
+                overlay.style.display = 'none';
+                ['dim-badge-l', 'dim-badge-w', 'dim-badge-h'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.style.display = 'none';
+                });
+                return;
+            }
+
+            const p1 = getHotspotScreenPos('hotspot-p1');
+            const p2 = getHotspotScreenPos('hotspot-p2');
+            const p3 = getHotspotScreenPos('hotspot-p3');
+            const p4 = getHotspotScreenPos('hotspot-p4');
+
+            if (!p1 || !p2 || !p3 || !p4) return;
+
+            const spread = Math.hypot(p2.x - p1.x, p2.y - p1.y)
+                         + Math.hypot(p3.x - p1.x, p3.y - p1.y)
+                         + Math.hypot(p4.x - p1.x, p4.y - p1.y);
+            if (spread < 10) return;
+
+            overlay.style.display = 'block';
+
+            const W = window.innerWidth, H = window.innerHeight;
+            overlay.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+
+            overlay.innerHTML = '';
+            initSVGDefs(overlay);
+
+            const lL = document.getElementById('dim-badge-l');
+            const lW = document.getElementById('dim-badge-w');
+            const lH = document.getElementById('dim-badge-h');
+
+            drawDimLine(overlay, p1, p2, lL, W, H);
+            drawDimLine(overlay, p1, p3, lW, W, H);
+            drawDimLine(overlay, p1, p4, lH, W, H);
+        }
+
         modelViewer.addEventListener('camera-change', () => {
             if (measurementModeActive && activeComponentKey) updateDimensions();
         });
 
-        // Animation frame loop to ensure perfect synchronization during transitions
         function animLoop() {
             try {
-                if (measurementModeActive && activeComponentKey) {
-                    updateDimensions();
-                }
-            } catch (e) {
-                console.warn('animLoop error:', e);
-            }
+                if (measurementModeActive && activeComponentKey) updateDimensions();
+            } catch (e) { /* silent */ }
             requestAnimationFrame(animLoop);
         }
         requestAnimationFrame(animLoop);

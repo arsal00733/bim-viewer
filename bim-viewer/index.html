@@ -1403,6 +1403,8 @@
 
         // ══════════════════════════════════════════════════════════════
         //  CAD SVG Dimension Lines Engine
+        //  Projects 3D world coords → 2D screen coords using camera orbit
+        //  (bypasses model-viewer's shadow-DOM hotspot system entirely)
         // ══════════════════════════════════════════════════════════════
         function initSVGDefs(overlay) {
             if (overlay.querySelector('defs')) return;
@@ -1423,12 +1425,108 @@
             overlay.appendChild(defs);
         }
 
-        function getHotspotScreenPos(id) {
-            const el = document.getElementById(id);
-            if (!el) return null;
-            const r = el.getBoundingClientRect();
-            if (r.width === 0 && r.height === 0 && r.left === 0 && r.top === 0) return null;
-            return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+        // ── Simple 4×4 matrix utilities (column-major, like WebGL) ──
+        function mat4Identity() {
+            return new Float64Array([
+                1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1
+            ]);
+        }
+
+        function mat4Multiply(a, b) {
+            const out = new Float64Array(16);
+            for (let col = 0; col < 4; col++) {
+                for (let row = 0; row < 4; row++) {
+                    let sum = 0;
+                    for (let k = 0; k < 4; k++) {
+                        sum += a[k * 4 + row] * b[col * 4 + k];
+                    }
+                    out[col * 4 + row] = sum;
+                }
+            }
+            return out;
+        }
+
+        function mat4LookAt(eyeX, eyeY, eyeZ, targetX, targetY, targetZ, upX, upY, upZ) {
+            let fx = targetX - eyeX, fy = targetY - eyeY, fz = targetZ - eyeZ;
+            const fLen = Math.hypot(fx, fy, fz);
+            fx /= fLen; fy /= fLen; fz /= fLen;
+
+            let rx = fy * upZ - fz * upY;
+            let ry = fz * upX - fx * upZ;
+            let rz = fx * upY - fy * upX;
+            const rLen = Math.hypot(rx, ry, rz);
+            rx /= rLen; ry /= rLen; rz /= rLen;
+
+            let ux = ry * fz - rz * fy;
+            let uy = rz * fx - rx * fz;
+            let uz = rx * fy - ry * fx;
+
+            return new Float64Array([
+                rx, ry, rz, 0,
+                ux, uy, uz, 0,
+                -fx, -fy, -fz, 0,
+                -(rx * eyeX + ry * eyeY + rz * eyeZ),
+                -(ux * eyeX + uy * eyeY + uz * eyeZ),
+                fx * eyeX + fy * eyeY + fz * eyeZ,
+                1
+            ]);
+        }
+
+        function mat4Perspective(fovDeg, aspect, near, far) {
+            const f = 1 / Math.tan((fovDeg * Math.PI) / 180 / 2);
+            const nf = 1 / (near - far);
+            return new Float64Array([
+                f / aspect, 0, 0, 0,
+                0, f, 0, 0,
+                0, 0, (far + near) * nf, -1,
+                0, 0, 2 * far * near * nf, 0
+            ]);
+        }
+
+        function mat4TransformPoint(m, x, y, z) {
+            const w = m[3] * x + m[7] * y + m[11] * z + m[15];
+            if (Math.abs(w) < 1e-10) return null;
+            return {
+                x: (m[0] * x + m[4] * y + m[8]  * z + m[12]) / w,
+                y: (m[1] * x + m[5] * y + m[9]  * z + m[13]) / w,
+                z: (m[2] * x + m[6] * y + m[10] * z + m[14]) / w
+            };
+        }
+
+        // ── Project a 3D world point to 2D screen coordinates ──
+        let _projCache = { viewProj: null, vr: null, fov: 0 };
+        function project3DTo2D(wx, wy, wz) {
+            const orbit = modelViewer.getCameraOrbit();
+            const targetStr = modelViewer.cameraTarget;
+            const targetParts = targetStr.split(' ').map(s => parseFloat(s));
+            const tx = targetParts[0], ty = targetParts[1], tz = targetParts[2];
+
+            const theta = orbit.theta;
+            const phi = orbit.phi;
+            const radius = orbit.radius;
+
+            // Camera position from spherical orbit (Three.js convention)
+            const sinP = Math.sin(phi), cosP = Math.cos(phi);
+            const sinT = Math.sin(theta), cosT = Math.cos(theta);
+            const ex = tx + radius * sinP * sinT;
+            const ey = ty + radius * cosP;
+            const ez = tz + radius * sinP * cosT;
+
+            const vr = modelViewer.getBoundingClientRect();
+            const aspect = vr.width / vr.height;
+            const fov = modelViewer.getFieldOfView ? modelViewer.getFieldOfView() : 45;
+
+            const view = mat4LookAt(ex, ey, ez, tx, ty, tz, 0, 1, 0);
+            const proj = mat4Perspective(fov, aspect, 0.1, 1000);
+            const vp = mat4Multiply(proj, view);
+
+            const ndc = mat4TransformPoint(vp, wx, wy, wz);
+            if (!ndc) return null;
+
+            return {
+                x: (ndc.x + 1) / 2 * vr.width + vr.left,
+                y: (1 - ndc.y) / 2 * vr.height + vr.top
+            };
         }
 
         function svgEl(overlay, tag, attrs) {
@@ -1483,17 +1581,21 @@
                 return;
             }
 
-            const p1 = getHotspotScreenPos('hotspot-p1');
-            const p2 = getHotspotScreenPos('hotspot-p2');
-            const p3 = getHotspotScreenPos('hotspot-p3');
-            const p4 = getHotspotScreenPos('hotspot-p4');
+            const comp = db[activeComponentKey];
+            if (!comp) return;
+
+            // Project the 4 anchor points directly from 3D world → 2D screen
+            const p1 = project3DTo2D(comp.p1[0], comp.p1[1], comp.p1[2]);
+            const p2 = project3DTo2D(comp.p2[0], comp.p2[1], comp.p2[2]);
+            const p3 = project3DTo2D(comp.p3[0], comp.p3[1], comp.p3[2]);
+            const p4 = project3DTo2D(comp.p4[0], comp.p4[1], comp.p4[2]);
 
             if (!p1 || !p2 || !p3 || !p4) return;
 
             const spread = Math.hypot(p2.x - p1.x, p2.y - p1.y)
                          + Math.hypot(p3.x - p1.x, p3.y - p1.y)
                          + Math.hypot(p4.x - p1.x, p4.y - p1.y);
-            if (spread < 10) return;
+            if (spread < 5) return;
 
             overlay.style.display = 'block';
 
