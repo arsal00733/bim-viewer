@@ -1240,17 +1240,29 @@
                 target: '-0.1m 0.17m -0.63m', r: '12m',
                 p1: [-0.8, 0, -9.8], p2: [-0.8, 0, 14.8], p3: [0.2, 0, -9.8], p4: [-0.8, 6.74, -9.8]
             },
-            'RetainingWalls_Left': {
-                n: 'Retaining Walls (Left Side)', l: '50.00 m (Total)', b: '1.60 m (Base) / 0.40 m (Top)', h: '4.00 m', mat: 'M25 Concrete',
-                est: 'DPR segments from Ch. -19m to -5m and Ch. 15m to 53m (Left side)',
-                target: '-0.15m 0.24m -0.5m', r: '25m',
-                p1: [-2.0, 2.74, 19.0], p2: [-2.0, 2.74, -53.0], p3: [-3.6, 2.74, 19.0], p4: [-2.0, 6.74, 19.0]
+            'RetainingWalls_Left_South': {
+                n: 'Retaining Walls (Left, South Approach)', l: '14.00 m', b: '1.60 m (Base) / 0.40 m (Top)', h: '4.00 m', mat: 'M25 Concrete',
+                est: 'Segments from Ch. -19m to -5m on the left approach side',
+                target: '-0.1m 0.17m 0.4m', r: '15m',
+                p1: [-2.0, 2.74, 19.0], p2: [-2.0, 2.74, 5.0], p3: [-3.6, 2.74, 19.0], p4: [-2.0, 6.74, 19.0]
             },
-            'RetainingWalls_Right': {
-                n: 'Retaining Walls (Right Side)', l: '50.00 m (Total)', b: '1.60 m (Base) / 0.40 m (Top)', h: '4.00 m', mat: 'M25 Concrete',
-                est: 'DPR segments from Ch. -19m to -5m and Ch. 15m to 53m (Right side)',
-                target: '0.5m 0.24m -0.5m', r: '25m',
-                p1: [9.0, 2.74, 19.0], p2: [9.0, 2.74, -53.0], p3: [10.6, 2.74, 19.0], p4: [9.0, 6.74, 19.0]
+            'RetainingWalls_Left_North': {
+                n: 'Retaining Walls (Left, North Approach)', l: '38.00 m', b: '1.60 m (Base) / 0.40 m (Top)', h: '4.00 m', mat: 'M25 Concrete',
+                est: 'Segments from Ch. 15m to 53m on the left approach side',
+                target: '-0.1m 0.17m -1.1m', r: '20m',
+                p1: [-2.0, 2.74, -15.0], p2: [-2.0, 2.74, -53.0], p3: [-3.6, 2.74, -15.0], p4: [-2.0, 6.74, -15.0]
+            },
+            'RetainingWalls_Right_South': {
+                n: 'Retaining Walls (Right, South Approach)', l: '14.00 m', b: '1.60 m (Base) / 0.40 m (Top)', h: '4.00 m', mat: 'M25 Concrete',
+                est: 'Segments from Ch. -19m to -5m on the right approach side',
+                target: '0.3m 0.17m 0.4m', r: '15m',
+                p1: [9.0, 2.74, 19.0], p2: [9.0, 2.74, 5.0], p3: [10.6, 2.74, 19.0], p4: [9.0, 6.74, 19.0]
+            },
+            'RetainingWalls_Right_North': {
+                n: 'Retaining Walls (Right, North Approach)', l: '38.00 m', b: '1.60 m (Base) / 0.40 m (Top)', h: '4.00 m', mat: 'M25 Concrete',
+                est: 'Segments from Ch. 15m to 53m on the right approach side',
+                target: '0.3m 0.17m -1.1m', r: '20m',
+                p1: [9.0, 2.74, -15.0], p2: [9.0, 2.74, -53.0], p3: [10.6, 2.74, -15.0], p4: [9.0, 6.74, -15.0]
             },
             'Footings': {
                 n: 'Footings', l: '7.30 m (Abutment) / 5.00 m (Wing)', b: '2.80 m', h: '1.00 m', mat: 'M25 RCC',

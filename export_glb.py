@@ -137,8 +137,10 @@ earth_meshes = []
 protection_wall_meshes = []
 guard_stone_meshes = []
 rcc_pipe_meshes = []
-retaining_wall_l_meshes = []
-retaining_wall_r_meshes = []
+retaining_wall_l_south_meshes = []
+retaining_wall_l_north_meshes = []
+retaining_wall_r_south_meshes = []
+retaining_wall_r_north_meshes = []
 expansion_joint_meshes = []
 
 
@@ -346,7 +348,10 @@ add(rcc_pipe_meshes, make_colored_cylinder([-PIPE_L / 2, yc_pipe, zc_pipe],
 print("Building retaining walls...")
 def add_rw_seg(side, y0, y1, wall_h, wt_b, wt_t, footings):
     z_base = 2.74; z_top = z_base + wall_h; N_rw = 8
-    target_lst = retaining_wall_l_meshes if side == 'L' else retaining_wall_r_meshes
+    if y0 < 0:
+        target_lst = retaining_wall_l_south_meshes if side == 'L' else retaining_wall_r_south_meshes
+    else:
+        target_lst = retaining_wall_l_north_meshes if side == 'L' else retaining_wall_r_north_meshes
     for i in range(N_rw):
         t0 = i / float(N_rw); t1 = (i + 1) / float(N_rw)
         zi0 = z_base + t0 * (z_top - z_base)
@@ -412,8 +417,10 @@ groups = [
     (protection_wall_meshes,  "ProtectionWalls"),
     (guard_stone_meshes,      "GuardStones"),
     (rcc_pipe_meshes,         "RCC_Pipe"),
-    (retaining_wall_l_meshes, "RetainingWalls_Left"),
-    (retaining_wall_r_meshes, "RetainingWalls_Right"),
+    (retaining_wall_l_south_meshes, "RetainingWalls_Left_South"),
+    (retaining_wall_l_north_meshes, "RetainingWalls_Left_North"),
+    (retaining_wall_r_south_meshes, "RetainingWalls_Right_South"),
+    (retaining_wall_r_north_meshes, "RetainingWalls_Right_North"),
     (expansion_joint_meshes,  "ExpansionJoints"),
 ]
 
