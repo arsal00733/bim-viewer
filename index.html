@@ -657,11 +657,11 @@
 
         .view-cube-container {
             position: absolute;
-            top: 24px;
+            top: 76px;
             right: 24px;
             width: 140px;
             height: 140px;
-            z-index: 99;
+            z-index: 15;
             pointer-events: auto;
             display: flex;
             align-items: center;
@@ -672,7 +672,7 @@
             .view-cube-container {
                 right: auto;
                 left: 16px;
-                top: 16px;
+                top: 66px;
                 width: 100px;
                 height: 100px;
             }
@@ -1073,7 +1073,7 @@
             position: absolute;
             top: 24px;
             right: 24px;
-            z-index: 20;
+            z-index: 30;
             width: 40px;
             height: 40px;
             border-radius: 10px;
@@ -1094,7 +1094,7 @@
             position: absolute;
             top: 72px;
             right: 24px;
-            z-index: 20;
+            z-index: 30;
             background: rgba(15,23,42,0.9);
             backdrop-filter: blur(16px);
             -webkit-backdrop-filter: blur(16px);
@@ -1710,7 +1710,6 @@
                 dd.classList.remove('open');
             }
         });
-        document.getElementById('measToggle').classList.add('active');
         modelViewer.classList.add('measure-mode-active');
 
         window.deselectComponent = function() {
