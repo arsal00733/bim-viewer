@@ -12,16 +12,16 @@ import trimesh
 import os
 
 MATERIALS = {
-    "concrete_a":  (135, 135, 130, 255),  # #878782 medium weathered concrete
-    "concrete_b":  (125, 125, 120, 255),  # #7D7D78 slightly darker layer
-    "pcc":         ( 85,  85,  82, 255),  # #555552 dark lean concrete
-    "footing":     (105, 105, 100, 255),  # #696964 dense below-grade concrete
-    "bedblock":    (145, 145, 140, 255),  # #91918C slightly lighter precast
-    "deck":        (120, 120, 115, 255),  # #787873 deck slab
-    "earth":       (125,  85,  50, 255),  # #7D5532 Kerala laterite soil
-    "steel":       ( 60,  65,  70, 255),  # #3C4146 structural steel
-    "asphalt":     ( 45,  45,  48, 255),  # #2D2D30 dark wearing coat
-    "handrail":    (165, 165, 160, 255),  # #A5A5A0 galvanized steel
+    "concrete_a":  (105, 105, 100, 255),  # dark weathered concrete
+    "concrete_b":  ( 95,  95,  90, 255),  # even darker layer for banding
+    "pcc":         ( 55,  55,  52, 255),  # dark lean concrete
+    "footing":     ( 75,  75,  70, 255),  # dense below-grade concrete
+    "bedblock":    (115, 115, 110, 255),  # slightly lighter precast
+    "deck":        ( 90,  90,  85, 255),  # deck slab
+    "earth":       ( 95,  65,  40, 255),  # dark Kerala laterite
+    "steel":       ( 45,  50,  55, 255),  # structural steel
+    "asphalt":     ( 30,  30,  32, 255),  # dark wearing coat
+    "handrail":    (135, 135, 130, 255),  # galvanized steel
     "misc":        ( 80,  80,  82, 200),  # dark grey misc
 }
 
@@ -549,11 +549,17 @@ for meshes, name in groups:
             rough, metal = 0.5, 0.3
         else:
             rough, metal = 0.65, 0.0   # default concrete
-        merged.visual.material = trimesh.visual.material.PBRMaterial(
-            name=name,
-            baseColorFactor=[1.0, 1.0, 1.0, 1.0],
-            roughnessFactor=rough,
-            metallicFactor=metal
+        # Preserve vertex colours when setting PBR material (avoid discarding ColorVisuals)
+        vc = merged.visual.vertex_colors.copy() if (hasattr(merged.visual, 'vertex_colors') and len(merged.visual.vertex_colors) > 0) else None
+        merged.visual = trimesh.visual.MaterialVisuals(
+            mesh=merged,
+            material=trimesh.visual.material.PBRMaterial(
+                name=name,
+                baseColorFactor=[1.0, 1.0, 1.0, 1.0],
+                roughnessFactor=rough,
+                metallicFactor=metal
+            ),
+            vertex_colors=vc
         )
         scene.add_geometry(merged, node_name=name)
         stats.append(f"  {name}: {len(merged.vertices):,} verts, {len(merged.faces):,} faces")
