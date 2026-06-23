@@ -1465,6 +1465,7 @@
         modelViewer.addEventListener('click', (event) => {
             if (!measurementModeActive) return;
             const material = modelViewer.materialFromPoint(event.clientX, event.clientY);
+            console.log('Click material:', material ? material.name : null);
             if (material && db[material.name]) {
                 activeComponentKey = material.name;
                 const comp = db[activeComponentKey];

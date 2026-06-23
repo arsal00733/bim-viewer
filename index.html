@@ -1432,13 +1432,6 @@
                 target: '-0.2m 0.36m -0.25m', r: '10m',
                 p1: [-0.2, 6.79, 5.3], p2: [-0.2, 6.79, 1.3], p3: [0, 6.79, 5.3], p4: [-0.2, 7.87, 5.3]
             }
-            },
-            'EarthFill': {
-                n: 'Approach Road Earth Fill', l: '72.00 m (Total length)', b: '7.00 m', h: '6.74 m max', mat: 'Selected cohesive soil',
-                est: 'Earth fill compacted in 20cm layers behind bridge structures',
-                target: '0m 0.17m 0.5m', r: '25m',
-                p1: [-3.5, 0, 10.0], p2: [3.5, 0, 10.0], p3: [-3.5, 0, 5.0], p4: [-3.5, 6.74, 10.0]
-            }
         };
 
         // Ruler is always active — mark the button as permanently active
@@ -1472,6 +1465,7 @@
         modelViewer.addEventListener('click', (event) => {
             if (!measurementModeActive) return;
             const material = modelViewer.materialFromPoint(event.clientX, event.clientY);
+            console.log('Click material:', material ? material.name : null);
             if (material && db[material.name]) {
                 activeComponentKey = material.name;
                 const comp = db[activeComponentKey];
