@@ -1218,7 +1218,7 @@
     </div>
 
     <!-- WBS Timeline Panel -->
-    <div class="wbs-panel" id="wbsPanel">
+    <div class="wbs-panel" id="wbsPanel" style="display:none;">
         <div class="wbs-header">Construction Stages</div>
         <div class="wbs-list" id="wbsList"></div>
     </div>
@@ -1242,6 +1242,27 @@
 
     <!-- Measurements Toggle Button -->
     <div class="measurements-toggle" id="measToggle" onclick="toggleMeasurementMode()">
+        <span class="toggle-dot"></span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;">
+            <rect x="2" y="7" width="20" height="10" rx="2" ry="2"></rect>
+            <line x1="6" y1="7" x2="6" y2="12"></line>
+            <line x1="10" y1="7" x2="10" y2="10"></line>
+            <line x1="14" y1="7" x2="14" y2="12"></line>
+            <line x1="18" y1="7" x2="18" y2="10"></line>
+        </svg>
+        <span>Ruler / Measurements</span>
+    </div>
+
+    <!-- WBS Toggle Button -->
+    <div class="measurements-toggle" id="wbsToggle" onclick="toggleWBS()" style="left: auto; right: 24px; bottom: 74px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;">
+            <rect x="3" y="3" width="7" height="7" rx="1"></rect>
+            <rect x="14" y="3" width="7" height="7" rx="1"></rect>
+            <rect x="3" y="14" width="7" height="7" rx="1"></rect>
+            <rect x="14" y="14" width="7" height="7" rx="1"></rect>
+        </svg>
+        <span id="wbsToggleLabel">Stages</span>
+    </div>
         <span class="toggle-dot"></span>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;">
             <rect x="2" y="7" width="20" height="10" rx="2" ry="2"></rect>
@@ -1615,6 +1636,15 @@
 
         // Ruler is always active — mark the button as permanently active
         window.toggleMeasurementMode = function() { /* no-op, always on */ };
+        window.toggleWBS = function() {
+            const p = document.getElementById('wbsPanel');
+            const visible = p.style.display !== 'none';
+            p.style.display = visible ? 'none' : 'block';
+            document.getElementById('wbsToggleLabel').textContent = visible ? 'Stages' : 'Close';
+            if (!visible && document.getElementById('wbsList').children.length === 0) {
+                renderWBS();
+            }
+        };
         document.getElementById('measToggle').classList.add('active');
         modelViewer.classList.add('measure-mode-active');
 
