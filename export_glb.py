@@ -12,17 +12,17 @@ import trimesh
 import os
 
 MATERIALS = {
-    "concrete_a":  (182, 177, 167, 255),  # Standard structural concrete (warm medium grey)
-    "concrete_b":  (170, 165, 156, 255),  # Slightly darker concrete layer
-    "pcc":         (128, 125, 120, 255),  # Lean PCC (darker grey)
-    "footing":     (162, 158, 150, 255),  # Below-grade footing concrete
-    "bedblock":    (188, 183, 173, 255),  # Precast bed block (smooth light grey)
-    "deck":        (158, 155, 148, 255),  # Weathered deck concrete
-    "earth":       (150,  88,  48, 255),  # Kerala laterite soil (reddish-brown)
-    "steel":       ( 82,  86,  92, 255),  # Painted structural steel (muted grey)
-    "asphalt":     ( 42,  42,  44, 255),  # Bituminous asphalt (near-black)
-    "handrail":    (178, 178, 176, 255),  # Galvanized/painted steel railing
-    "misc":        (100, 100, 100, 200),  # Dark grey misc (joints, drainage)
+    "concrete_a":  (183, 176, 166, 255),  # #B7B0A6 retaining walls / abutments
+    "concrete_b":  (170, 164, 155, 255),  # slightly darker layer
+    "pcc":         (115, 112, 107, 255),  # #73706B lean PCC
+    "footing":     (143, 138, 130, 255),  # #8F8A82 below-grade footings
+    "bedblock":    (192, 186, 176, 255),  # lighter precast bed block
+    "deck":        (169, 163, 151, 255),  # #A9A397 weathered deck
+    "earth":       (139,  74,  43, 255),  # #8B4A2B laterite soil
+    "steel":       ( 82,  86,  92, 255),  # #52565C structural steel
+    "asphalt":     ( 30,  30,  31, 255),  # #1E1E1F bituminous asphalt
+    "handrail":    (184, 184, 181, 255),  # #B8B8B5 galvanised railing
+    "misc":        ( 80,  80,  82, 200),  # dark grey misc
 }
 
 # ═══════════════════════════════════════════════════════════════
@@ -466,14 +466,16 @@ for meshes, name in groups:
         merged = trimesh.util.concatenate(valid)
         merged.apply_transform(z_to_y_up)
         # PBR parameters per component type
-        if any(kw in name for kw in ['Steel', 'Bearings', 'Handrail']):
-            rough, metal = 0.35, 0.85
+        if any(kw in name for kw in ['Handrail']):
+            rough, metal = 0.45, 0.7
+        elif any(kw in name for kw in ['Steel', 'Bearings']):
+            rough, metal = 0.3, 0.85
         elif any(kw in name for kw in ['Asphalt', 'WC']):
-            rough, metal = 0.95, 0.0
+            rough, metal = 1.0, 0.0
         elif any(kw in name for kw in ['Earth']):
             rough, metal = 1.0, 0.0
         elif any(kw in name for kw in ['Deck', 'Slab']):
-            rough, metal = 0.85, 0.0
+            rough, metal = 0.9, 0.0
         elif any(kw in name for kw in ['Pipe', 'Drainage']):
             rough, metal = 0.5, 0.6
         else:
