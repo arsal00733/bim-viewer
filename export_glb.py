@@ -12,17 +12,17 @@ import trimesh
 import os
 
 MATERIALS = {
-    "concrete_a":  (205, 198, 182, 255),  # Warm off-white / light beige concrete
-    "concrete_b":  (190, 183, 168, 255),  # Slightly darker warm beige concrete
-    "pcc":         (130, 127, 120, 255),  # Plain cement concrete (grey)
-    "footing":     (175, 170, 158, 255),  # Structural footing concrete
-    "bedblock":    (200, 195, 180, 255),  # Light concrete for bed blocks
-    "deck":        (155, 153, 148, 255),  # Muted grey weathered deck surface
-    "earth":       (139,  90,  43, 255),  # Brown earth fill
-    "steel":       ( 85,  88,  92, 255),  # Muted grey steel
-    "asphalt":     ( 45,  45,  48, 255),  # Dark asphalt road
-    "handrail":    (210, 210, 207, 255),  # White / light grey railing
-    "misc":        (150, 148, 142, 200),  # Neutral grey misc
+    "concrete_a":  (182, 177, 167, 255),  # Standard structural concrete (warm medium grey)
+    "concrete_b":  (170, 165, 156, 255),  # Slightly darker concrete layer
+    "pcc":         (128, 125, 120, 255),  # Lean PCC (darker grey)
+    "footing":     (162, 158, 150, 255),  # Below-grade footing concrete
+    "bedblock":    (188, 183, 173, 255),  # Precast bed block (smooth light grey)
+    "deck":        (158, 155, 148, 255),  # Weathered deck concrete
+    "earth":       (150,  88,  48, 255),  # Kerala laterite soil (reddish-brown)
+    "steel":       ( 82,  86,  92, 255),  # Painted structural steel (muted grey)
+    "asphalt":     ( 42,  42,  44, 255),  # Bituminous asphalt (near-black)
+    "handrail":    (178, 178, 176, 255),  # Galvanized/painted steel railing
+    "misc":        (100, 100, 100, 200),  # Dark grey misc (joints, drainage)
 }
 
 # ═══════════════════════════════════════════════════════════════
