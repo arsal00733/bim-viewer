@@ -12,8 +12,8 @@ import trimesh
 import os
 
 MATERIALS = {
-    "concrete_a":  (168, 162, 155, 255),  # #A8A29B medium-dark warm concrete grey
-    "concrete_b":  (158, 152, 145, 255),  # slightly darker concrete layer
+    "concrete_a":  (152, 147, 139, 255),  # #98938B darker weathered concrete
+    "concrete_b":  (142, 137, 129, 255),  # slightly darker concrete layer
     "pcc":         (107, 103,  97, 255),  # #6B6761 lean PCC
     "footing":     (139, 134, 126, 255),  # #8B867E footings
     "bedblock":    (176, 172, 164, 255),  # #B0ACA4 precast bed block
@@ -21,7 +21,7 @@ MATERIALS = {
     "earth":       (170, 130, 100, 255),  # #AA8264 earth fill (keep)
     "steel":       ( 77,  83,  89, 255),  # #4D5359 steel bearings
     "asphalt":     ( 63,  65,  68, 255),  # #3F4144 asphalt road
-    "handrail":    (189, 189, 186, 255),  # #BDBDBA handrails
+    "handrail":    (156, 156, 152, 255),  # #9C9C98 darker handrails
     "misc":        ( 80,  80,  82, 200),  # dark grey misc
 }
 
@@ -80,6 +80,16 @@ def make_cylinder(p1, p2, radius, sections=8):
     center = (p1 + p2) / 2.0
     c.apply_translation(center)
     return c
+
+def add_concrete_noise(mesh, intensity=6):
+    """Add subtle random noise to vertex colours to break up smooth surfaces."""
+    if not hasattr(mesh.visual, 'vertex_colors') or len(mesh.visual.vertex_colors) == 0:
+        return mesh
+    vc = mesh.visual.vertex_colors.copy().astype(np.float32)
+    noise = np.random.randint(-intensity, intensity + 1, size=vc.shape[:1] + (3,)).astype(np.float32)
+    vc[:, :3] = np.clip(vc[:, :3] + noise, 0, 255)
+    mesh.visual = trimesh.visual.ColorVisuals(mesh=mesh, vertex_colors=vc.astype(np.uint8))
+    return mesh
 
 def darken_creases(mesh, strength=0.25):
     """Darken vertices at sharp edges/corners to approximate AO on box geometry."""
@@ -513,22 +523,32 @@ for meshes, name in groups:
     if valid:
         merged = trimesh.util.concatenate(valid)
         merged = flat_shade(merged)
+        merged = darken_creases(merged, strength=0.2)
+        merged = add_concrete_noise(merged, intensity=5)
         merged.apply_transform(z_to_y_up)
-        # PBR parameters per component type
+        # PBR parameters per component type (lower roughness = sharper highlights)
         if any(kw in name for kw in ['Handrail']):
-            rough, metal = 0.45, 0.7
+            rough, metal = 0.35, 0.6
         elif any(kw in name for kw in ['Steel', 'Bearings']):
-            rough, metal = 0.3, 0.7
+            rough, metal = 0.2, 0.7
         elif any(kw in name for kw in ['Asphalt', 'WC']):
-            rough, metal = 1.0, 0.0
+            rough, metal = 0.95, 0.0
         elif any(kw in name for kw in ['Earth']):
             rough, metal = 1.0, 0.0
         elif any(kw in name for kw in ['Deck', 'Slab']):
-            rough, metal = 0.9, 0.0
+            rough, metal = 0.75, 0.0
         elif any(kw in name for kw in ['Pipe', 'Drainage']):
             rough, metal = 0.5, 0.6
+        elif any(kw in name for kw in ['Footings']):
+            rough, metal = 0.8, 0.0
+        elif any(kw in name for kw in ['Block', 'Bed']):
+            rough, metal = 0.7, 0.0
+        elif any(kw in name for kw in ['PCC']):
+            rough, metal = 0.85, 0.0
+        elif any(kw in name for kw in ['Joint']):
+            rough, metal = 0.5, 0.3
         else:
-            rough, metal = 0.9, 0.0   # default concrete
+            rough, metal = 0.65, 0.0   # default concrete
         merged.visual.material = trimesh.visual.material.PBRMaterial(
             name=name,
             baseColorFactor=[1.0, 1.0, 1.0, 1.0],
