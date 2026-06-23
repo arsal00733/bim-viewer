@@ -482,7 +482,7 @@ for meshes, name in groups:
             rough, metal = 0.9, 0.0   # default concrete
         merged.visual.material = trimesh.visual.material.PBRMaterial(
             name=name,
-            baseColorFactor=[255, 255, 255, 255],
+            baseColorFactor=[1.0, 1.0, 1.0, 1.0],
             roughnessFactor=rough,
             metallicFactor=metal
         )
