@@ -1,11 +1,5 @@
-*.rvt
-*.rfa
-*.sat
-*.obj
-*.mtl
-*.pdf
-*.png
-error_log.txt
-Project2_Error Report.html
-estimate/
-*.log
+__pycache__/
+*.pyc
+deployed.glb
+inspect_glb.py
+check_deployed.py

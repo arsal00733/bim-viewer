@@ -906,6 +906,167 @@
         .compass-label.s { bottom: 2px; left: 50%; margin-left: -6px; }
         .compass-label.w { left: 2px; top: 50%; margin-top: -6px; }
         .compass-label.e { right: 2px; top: 50%; margin-top: -6px; }
+
+        /* ═══════ WBS Timeline Panel ═══════ */
+        .wbs-panel {
+            position: absolute;
+            top: 24px;
+            right: 24px;
+            width: 240px;
+            max-height: calc(100vh - 200px);
+            overflow-y: auto;
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            pointer-events: auto;
+            font-size: 13px;
+            z-index: 10;
+        }
+        .wbs-header {
+            font-weight: 600;
+            font-size: 11px;
+            letter-spacing: 1.2px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+        .wbs-item {
+            padding: 5px 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+            color: var(--text-muted);
+        }
+        .wbs-item:hover {
+            background: rgba(255,255,255,0.06);
+        }
+        .wbs-item .num {
+            font-weight: 600;
+            min-width: 18px;
+            color: var(--text-muted);
+            font-size: 11px;
+        }
+        .wbs-item.active {
+            background: rgba(59,130,246,0.2);
+            color: #60a5fa;
+        }
+        .wbs-item.active .num { color: #60a5fa; }
+        .wbs-item.completed { color: var(--text-main); }
+        .wbs-item.completed .num { color: #22c55e; }
+        .wbs-item.future { opacity: 0.4; }
+
+        /* ═══════ Timeline Bar ═══════ */
+        .timeline-bar {
+            position: absolute;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(15,23,42,0.8);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 10px 20px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            pointer-events: auto;
+            z-index: 10;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+        }
+        .timeline-bar button {
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.12);
+            color: var(--text-main);
+            border-radius: 8px;
+            padding: 6px 14px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+        .timeline-bar button:hover { background: rgba(255,255,255,0.15); }
+        .timeline-slider-container {
+            flex: 1;
+            min-width: 140px;
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        .timeline-bar input[type=range] {
+            width: 100%;
+            height: 4px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: rgba(255,255,255,0.15);
+            border-radius: 2px;
+            outline: none;
+        }
+        .timeline-bar input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: var(--accent);
+            cursor: pointer;
+            border: 2px solid rgba(255,255,255,0.3);
+        }
+        .timeline-bar input[type=range]::-moz-range-thumb {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: var(--accent);
+            cursor: pointer;
+            border: 2px solid rgba(255,255,255,0.3);
+        }
+        .stage-label {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-main);
+            min-width: 100px;
+            text-align: center;
+            white-space: nowrap;
+        }
+        .stage-label .sub { color: var(--text-muted); font-weight: 400; font-size: 11px; }
+
+        /* ═══════ Stage Info Box ═══════ */
+        .stage-info {
+            position: absolute;
+            bottom: 80px;
+            right: 24px;
+            background: rgba(15,23,42,0.8);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 14px 18px;
+            pointer-events: none;
+            z-index: 10;
+            min-width: 160px;
+            font-size: 13px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.3);
+        }
+        .stage-info .si-title { font-weight: 600; font-size: 14px; margin-bottom: 2px; }
+        .stage-info .si-item { color: var(--text-muted); font-size: 12px; line-height: 1.6; }
+        .stage-info .si-item strong { color: var(--text-main); }
+        .stage-info .highlight-badge {
+            display: inline-block;
+            background: rgba(59,130,246,0.25);
+            color: #60a5fa;
+            font-size: 10px;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 4px;
+            margin-top: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
     </style>
 </head>
 <body>
@@ -1056,6 +1217,20 @@
         </div>
     </div>
 
+    <!-- WBS Timeline Panel -->
+    <div class="wbs-panel" id="wbsPanel">
+        <div class="wbs-header">Construction Stages</div>
+        <div class="wbs-list" id="wbsList"></div>
+    </div>
+
+    <!-- Stage Info -->
+    <div class="stage-info" id="stageInfo">
+        <div class="si-title" id="siTitle">Finished Structure</div>
+        <div class="si-item" id="siSpec"></div>
+        <div class="si-item" id="siQty"></div>
+        <div><span class="highlight-badge" id="siBadge">Completed</span></div>
+    </div>
+
     <!-- Restore Info Button -->
     <div class="info-restore-btn" id="infoRestoreBtn" onclick="restoreInfoPanel(event)" title="Show Info Panel">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -1151,16 +1326,6 @@
         if (window.innerWidth <= 768) {
             document.getElementById('infoPanel').classList.add('minimized');
         }
-
-        // Save original material colors on load, restore on deselect
-        modelViewer.addEventListener('load', () => {
-            if (modelViewer.model) {
-                modelViewer.model.materials.forEach(m => {
-                    const f = m.pbrMetallicRoughness.baseColorFactor;
-                    origColors[m.name] = [f[0], f[1], f[2], f[3]];
-                });
-            }
-        });
 
         // Home View Reset
         window.resetCameraView = function() {
@@ -1776,7 +1941,158 @@
             requestAnimationFrame(animLoop);
         }
         requestAnimationFrame(animLoop);
+
+        // ══════════════════════════════════════════════════════════
+        //  4D BIM WBS Timeline Logic
+        // ══════════════════════════════════════════════════════════
+        const stages = [
+            { id:1,  name:'Site Preparation',       item:'11.1.1.1', spec:'Earthwork Excavation',                    qty:'71.820 m³ + 52.668 m³ rock',         comps:[] },
+            { id:2,  name:'PCC Levelling Course',   item:'11.4.1.1', spec:'PCC Grade M10 (1:3:6)',                   qty:'14.364 m³',                           comps:['PCC_Left','PCC_Right'] },
+            { id:3,  name:'Foundation Footings',    item:'11.4.5',   spec:'RCC Grade M25',                            qty:'78.400 m³',                           comps:['Footings_Left','Footings_Right'] },
+            { id:4,  name:'Foundation Reinforcement',item:'11.7',    spec:'HYSD Reinforcement',                       qty:'6.164 tonnes',                        comps:[] },
+            { id:5,  name:'Abutments & Wing Walls', item:'12.5.3',  spec:'RCC Grade M20',                            qty:'320.357 m³',                          comps:['Abutment_Left','Abutment_Right','WingWalls_Left','WingWalls_Right','Backwalls_Left','Backwalls_Right'] },
+            { id:6,  name:'Substructure Reinforcement',item:'12.7', spec:'TMT Fe415 Reinforcement',                  qty:'4.805 tonnes',                        comps:[] },
+            { id:7,  name:'Bed Blocks',             item:'13.1.3',  spec:'RCC Grade M25',                            qty:'4.200 m³',                            comps:['BedBlocks_Left','BedBlocks_Right'] },
+            { id:8,  name:'Bearings',               item:'—',       spec:'Structural Steel',                         qty:'As per drawing',                      comps:['Bearings_South','Bearings_North'] },
+            { id:9,  name:'Deck Slab Reinforcement',item:'13.2',    spec:'HYSD Bars',                                qty:'7.282 tonnes',                        comps:[] },
+            { id:10, name:'Deck Slab Concrete',     item:'13.1.3',  spec:'RCC Grade M30',                            qty:'54.834 m³',                           comps:['DeckSlab','AsphaltWC'] },
+            { id:11, name:'Handrails & Posts',      item:'13.1.3',  spec:'RCC Grade M25',                            qty:'7.020 m³',                            comps:['Handrails_Left','Handrails_Right'] },
+            { id:12, name:'Weep Holes / Drainage',  item:'OD162747',spec:'PVC Weep Holes',                           qty:'100 m',                               comps:['Drainage_South','Drainage_North','RCC_Pipe'] },
+            { id:13, name:'River Protection Works', item:'—',       spec:'RCC Grade M20',                            qty:'314.538 m³',                          comps:['ProtectionWalls_South','ProtectionWalls_North','GuardStones_South','GuardStones_North','RetainingWalls_Left_South','RetainingWalls_Left_North','RetainingWalls_Right_South','RetainingWalls_Right_North'] },
+            { id:14, name:'Approach Embankment',    item:'3.4',     spec:'Earthwork / Granular Fill',                qty:'691.762 m³',                          comps:['EarthFill_South','EarthFill_North','ApproachSlabs_South','ApproachSlabs_North'] },
+            { id:15, name:'Name Board & Finishing', item:'—',       spec:'Granite / Paint / Expansion Joints',       qty:'—',                                   comps:['NameBoard','ExpansionJoints_South','ExpansionJoints_North'] },
+        ];
+        let currentStage = 15;
+
+        // WBS: save orig baseColorFactor on load (for restore after highlight)
+        modelViewer.addEventListener('load', () => {
+            if (!modelViewer.model) return;
+            modelViewer.model.materials.forEach(m => {
+                const f = m.pbrMetallicRoughness.baseColorFactor;
+                origColors[m.name] = [f[0], f[1], f[2], f[3]];
+            });
+            renderWBS();
+            updateStageVisibility();
+            updateStageInfo();
+        });
+
+        // If model already loaded (cache), ensure visibility runs
+        setTimeout(() => {
+            if (modelViewer.model && Object.keys(origColors).length > 0) {
+                renderWBS();
+                updateStageVisibility();
+                updateStageInfo();
+            }
+        }, 500);
+
+        function getStage(stageNum) {
+            return stages.find(s => s.id === stageNum) || stages[stages.length-1];
+        }
+
+        function setStage(num) {
+            num = Math.max(1, Math.min(stages.length, Number(num)));
+            if (num === currentStage) return;
+            if (activeComponentKey) deselectComponent();
+            currentStage = num;
+            renderWBS();
+            updateStageVisibility();
+            updateStageInfo();
+            document.getElementById('stageSlider').value = num;
+            const s = getStage(num);
+            document.getElementById('stageLabel').innerHTML = 'Stage ' + num + ' / ' + stages.length + ' <span class="sub">' + s.name + '</span>';
+        }
+
+        window.setStage = setStage;
+        window.prevStage = () => setStage(currentStage - 1);
+        window.nextStage = () => setStage(currentStage + 1);
+
+        function renderWBS() {
+            const list = document.getElementById('wbsList');
+            if (!list) return;
+            list.innerHTML = '';
+            stages.forEach(s => {
+                const div = document.createElement('div');
+                div.className = 'wbs-item';
+                if (s.id < currentStage) div.classList.add('completed');
+                else if (s.id === currentStage) div.classList.add('active');
+                else div.classList.add('future');
+                div.innerHTML = '<span class="num">' + s.id + '</span>' + s.name;
+                div.onclick = () => setStage(s.id);
+                list.appendChild(div);
+            });
+        }
+
+        function updateStageVisibility() {
+            if (!modelViewer.model) return;
+            const stage = getStage(currentStage);
+            modelViewer.model.materials.forEach(m => {
+                const stageId = stages.findIndex(s => s.comps.includes(m.name)) + 1;
+                const isPast = stageId > 0 && stageId < currentStage;
+                const isCurrent = stageId === currentStage;
+                const isFuture = stageId > currentStage;
+                const hasNoStage = stageId === 0;
+
+                if (hasNoStage) {
+                    // Components not in any stage (misc, etc) — visible always
+                    m.setAlphaMode('OPAQUE');
+                    const orig = origColors[m.name];
+                    if (orig) m.pbrMetallicRoughness.setBaseColorFactor(orig);
+                } else if (isFuture) {
+                    m.setAlphaMode('BLEND');
+                    m.pbrMetallicRoughness.setBaseColorFactor([1, 1, 1, 0.04]);
+                } else if (isCurrent) {
+                    m.setAlphaMode('OPAQUE');
+                    // Slight blue highlight
+                    const orig = origColors[m.name];
+                    if (orig) {
+                        const h = [
+                            Math.min(orig[0] + 0.08, 1),
+                            Math.min(orig[1] + 0.05, 1),
+                            Math.min(orig[2] + 0.15, 1),
+                            1
+                        ];
+                        m.pbrMetallicRoughness.setBaseColorFactor(h);
+                    }
+                } else {
+                    // Past — normal
+                    m.setAlphaMode('OPAQUE');
+                    const orig = origColors[m.name];
+                    if (orig) m.pbrMetallicRoughness.setBaseColorFactor(orig);
+                }
+            });
+        }
+
+        function updateStageInfo() {
+            const s = getStage(currentStage);
+            document.getElementById('siTitle').textContent = s.name;
+            document.getElementById('siSpec').innerHTML = '<strong>Item:</strong> ' + s.item + '<br><strong>Spec:</strong> ' + s.spec;
+            document.getElementById('siQty').innerHTML = '<strong>Quantity:</strong> ' + s.qty;
+
+            if (currentStage < stages.length) {
+                document.getElementById('siBadge').textContent = 'In Progress — Stage ' + currentStage;
+            } else {
+                document.getElementById('siBadge').textContent = 'Completed';
+            }
+        }
+
+        // Override deselectComponent to re-apply stage visibility after restoring colors
+        const _origDeselect = window.deselectComponent;
+        window.deselectComponent = function() {
+            _origDeselect();
+            updateStageVisibility();
+            updateStageInfo();
+        };
     </script>
+
+    <!-- WBS Timeline Bar -->
+    <div class="timeline-bar">
+        <button onclick="prevStage()">◀</button>
+        <div class="timeline-slider-container">
+            <input type="range" id="stageSlider" min="1" max="15" value="15" oninput="setStage(this.value)">
+        </div>
+        <button onclick="nextStage()">▶</button>
+        <div class="stage-label" id="stageLabel">Stage 15 / 15 <span class="sub">Complete</span></div>
+    </div>
 
 </body>
 </html>

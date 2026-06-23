@@ -1,0 +1,8 @@
+Kakkathode Bridge — DirectShape Report
+========================================
+Exported: C:\Users\mohda\kakathod bim\bridge_concrete.sat | Exported: C:\Users\mohda\kakathod bim\bridge_steel.sat | Exported: C:\Users\mohda\kakathod bim\bridge_earth.sat |  | DirectShapes: 144
+Concrete elements : 405
+Earth elements    : 8
+Steel elements    : 286
+Misc elements     : 32
+DirectShapes made : 144
