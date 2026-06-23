@@ -134,6 +134,55 @@
             font-size: 16px;
         }
 
+        /* Info Panel Close and Restore Buttons */
+        .info-close-btn {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            width: 28px;
+            height: 28px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 50%;
+            color: #94a3b8;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            z-index: 10;
+        }
+        .info-close-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: #fff;
+            transform: scale(1.05);
+        }
+        .info-restore-btn {
+            position: absolute;
+            bottom: 24px;
+            left: 24px;
+            width: 44px;
+            height: 44px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 50%;
+            color: #60a5fa;
+            cursor: pointer;
+            display: none; /* Hidden by default */
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            z-index: 98;
+            transition: all 0.2s ease;
+        }
+        .info-restore-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: #fff;
+            transform: scale(1.05);
+        }
+
         @keyframes slideIn {
             to { opacity: 1; transform: translateY(0); }
         }
@@ -286,6 +335,11 @@
                 top: 24px;
                 right: 16px;
                 padding: 12px 20px;
+            }
+
+            .info-restore-btn {
+                bottom: 16px;
+                left: 12px;
             }
         }
 
@@ -911,6 +965,13 @@
 
     <!-- Glassmorphism Overlay -->
     <div class="info-panel" id="infoPanel">
+        <!-- Close Button -->
+        <button class="info-close-btn" onclick="closeInfoPanel(event)" aria-label="Close Info Panel">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+        </button>
         <div class="panel-header" onclick="togglePanel()">
             <div class="panel-header-left">
                 <span class="tag">Navakerala Sadas</span>
@@ -926,7 +987,7 @@
             <p>Interactive DPR-accurate structural model. Verified dimensions, footings, and approach roads.</p>
             <div class="controls-list">
                 <div class="control-item">
-                    <div class="control-icon">👆</div>
+                    <div class="control-icon">👉</div>
                     <span>Drag to rotate</span>
                 </div>
                 <div class="control-item">
@@ -939,6 +1000,15 @@
                 </div>
             </div>
         </div>
+    </div>
+
+    <!-- Restore Info Button -->
+    <div class="info-restore-btn" id="infoRestoreBtn" onclick="restoreInfoPanel(event)" title="Show Info Panel">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+        </svg>
     </div>
 
     <!-- Measurements Toggle Button -->
@@ -982,6 +1052,18 @@
         function togglePanel() {
             document.getElementById('infoPanel').classList.toggle('minimized');
         }
+
+        window.closeInfoPanel = function(event) {
+            if (event) event.stopPropagation();
+            document.getElementById('infoPanel').style.display = 'none';
+            document.getElementById('infoRestoreBtn').style.display = 'flex';
+        };
+
+        window.restoreInfoPanel = function(event) {
+            if (event) event.stopPropagation();
+            document.getElementById('infoPanel').style.display = 'block';
+            document.getElementById('infoRestoreBtn').style.display = 'none';
+        };
 
         // Auto-minimize on mobile
         if (window.innerWidth <= 768) {
@@ -1049,127 +1131,127 @@
             compassRing.style.transform = `rotateX(65deg) rotateZ(${-thetaDeg}deg)`;
         });
 
-        // ═════════════════════════════════════════════════════════════�        // ═══════════════════════════════════════════════════════════════
+        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
         //  Measurements / CAD-Style 3D Ruler Mode
-        // ═══════════════════════════════════════════════════════════════
+        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
         [ignoring loop detection]
         let measurementModeActive = false;
         let activeComponentKey = null;
 
-        const db = {
+                const db = {
             'Abutment_Left': {
                 n: 'Abutment (Left Side)', l: '7.30 m', b: '2.50 m (Base) / 1.00 m (Top)', h: '5.70 m', mat: 'M25 Concrete',
                 est: '1 x 7.30 x ((2.50 + 1.00)/2) x 5.70 = 72.82 m³',
-                target: [0, 2.85, -1.25], r: '12m',
-                p1: [-3.85, 0, 0.1], p2: [3.85, 0, 0.1], p3: [-3.85, 0, -2.6], p4: [-3.85, 5.7, 0.1]
+                target: '0m 0.14m 0.06m', r: '12m',
+                p1: [-3.85, 0, -0.1], p2: [3.85, 0, -0.1], p3: [-3.85, 0, 2.6], p4: [-3.85, 5.7, -0.1]
             },
             'Abutment_Right': {
                 n: 'Abutment (Right Side)', l: '7.30 m', b: '2.50 m (Base) / 1.00 m (Top)', h: '5.70 m', mat: 'M25 Concrete',
                 est: '1 x 7.30 x ((2.50 + 1.00)/2) x 5.70 = 72.82 m³',
-                target: [0, 2.85, 11.25], r: '12m',
-                p1: [-3.85, 0, 9.9], p2: [3.85, 0, 9.9], p3: [-3.85, 0, 12.6], p4: [-3.85, 5.7, 9.9]
+                target: '0m 0.14m -0.56m', r: '12m',
+                p1: [-3.85, 0, -9.9], p2: [3.85, 0, -9.9], p3: [-3.85, 0, -12.6], p4: [-3.85, 5.7, -9.9]
             },
             'WingWalls_Left': {
                 n: 'Wing Walls (Left Side)', l: '5.00 m', b: '0.60 m (Base) / 0.40 m (Top)', h: '6.74 m', mat: 'M25 Concrete',
                 est: '2 x 5.00 x ((0.60 + 0.40)/2) x 6.74 = 33.70 m³',
-                target: [-2.0, 3.37, -2.5], r: '12m',
-                p1: [-0.8, 0, 0.2], p2: [-0.8, 0, -5.2], p3: [0.2, 0, 0.2], p4: [-0.8, 6.74, 0.2]
+                target: '-0.1m 0.17m 0.13m', r: '12m',
+                p1: [-0.8, 0, -0.2], p2: [-0.8, 0, 5.2], p3: [0.2, 0, -0.2], p4: [-0.8, 6.74, -0.2]
             },
             'WingWalls_Right': {
                 n: 'Wing Walls (Right Side)', l: '5.00 m', b: '0.60 m (Base) / 0.40 m (Top)', h: '6.74 m', mat: 'M25 Concrete',
                 est: '2 x 5.00 x ((0.60 + 0.40)/2) x 6.74 = 33.70 m³',
-                target: [-2.0, 3.37, 12.5], r: '12m',
-                p1: [-0.8, 0, 9.8], p2: [-0.8, 0, 14.8], p3: [0.2, 0, 9.8], p4: [-0.8, 6.74, 9.8]
+                target: '-0.1m 0.17m -0.63m', r: '12m',
+                p1: [-0.8, 0, -9.8], p2: [-0.8, 0, 14.8], p3: [0.2, 0, -9.8], p4: [-0.8, 6.74, -9.8]
             },
             'RetainingWalls_Left': {
                 n: 'Retaining Walls (Left Side)', l: '50.00 m (Total)', b: '1.60 m (Base) / 0.40 m (Top)', h: '4.00 m', mat: 'M25 Concrete',
                 est: 'DPR segments from Ch. -19m to -5m and Ch. 15m to 53m (Left side)',
-                target: [-3.0, 4.74, 10.0], r: '25m',
-                p1: [-2.0, 2.74, 15.0], p2: [-2.0, 2.74, 53.0], p3: [-3.6, 2.74, 15.0], p4: [-2.0, 6.74, 15.0]
+                target: '-0.15m 0.24m -0.5m', r: '25m',
+                p1: [-2.0, 2.74, -15.0], p2: [-2.0, 2.74, -53.0], p3: [-3.6, 2.74, -15.0], p4: [-2.0, 6.74, -15.0]
             },
             'RetainingWalls_Right': {
                 n: 'Retaining Walls (Right Side)', l: '50.00 m (Total)', b: '1.60 m (Base) / 0.40 m (Top)', h: '4.00 m', mat: 'M25 Concrete',
                 est: 'DPR segments from Ch. -19m to -5m and Ch. 15m to 53m (Right side)',
-                target: [10.0, 4.74, 10.0], r: '25m',
-                p1: [9.0, 2.74, 15.0], p2: [9.0, 2.74, 53.0], p3: [10.6, 2.74, 15.0], p4: [9.0, 6.74, 15.0]
+                target: '0.5m 0.24m -0.5m', r: '25m',
+                p1: [9.0, 2.74, -15.0], p2: [9.0, 2.74, -53.0], p3: [10.6, 2.74, -15.0], p4: [9.0, 6.74, -15.0]
             },
             'Footings': {
                 n: 'Footings', l: '7.30 m (Abutment) / 5.00 m (Wing)', b: '2.80 m', h: '1.00 m', mat: 'M25 RCC',
                 est: 'Abutment footings: 2 x 7.30 x 2.80 x 1.00 = 40.88 m³',
-                target: [0, -0.5, -1.25], r: '10m',
-                p1: [-3.8, -1.0, 1.65], p2: [3.8, -1.0, 1.65], p3: [-3.8, -1.0, -4.15], p4: [-3.8, 0, 1.65]
+                target: '0m -0.03m 0.06m', r: '10m',
+                p1: [-3.8, -1.0, -1.65], p2: [3.8, -1.0, -1.65], p3: [-3.8, -1.0, 4.15], p4: [-3.8, 0, -1.65]
             },
             'PCC': {
                 n: 'PCC Foundation Bed', l: '7.60 m (Abutment) / 5.30 m (Wing)', b: '6.30 m / 3.10 m', h: '0.15 m', mat: 'M15 Concrete (1:4:8)',
                 est: 'PCC bed layer below all structural foundations',
-                target: [0, -1.075, -1.25], r: '10m',
-                p1: [-3.95, -1.15, 1.8], p2: [3.95, -1.15, 1.8], p3: [-3.95, -1.15, -4.5], p4: [-3.95, -1.0, 1.8]
+                target: '0m -0.05m 0.06m', r: '10m',
+                p1: [-3.95, -1.15, -1.8], p2: [3.95, -1.15, -1.8], p3: [-3.95, -1.15, 4.5], p4: [-3.95, -1.0, -1.8]
             },
             'BedBlocks': {
                 n: 'Bed Blocks', l: '7.00 m', b: '1.00 m', h: '0.30 m', mat: 'M25 Concrete',
                 est: '2 x 7.00 x 1.00 x 0.30 = 4.20 m³',
-                target: [0, 5.85, -0.5], r: '10m',
-                p1: [-3.5, 5.7, 0.1], p2: [3.5, 5.7, 0.1], p3: [-3.5, 5.7, -1.1], p4: [-3.5, 6.0, 0.1]
+                target: '0m 0.29m 0.03m', r: '10m',
+                p1: [-3.5, 5.7, -0.1], p2: [3.5, 5.7, -0.1], p3: [-3.5, 5.7, 1.1], p4: [-3.5, 6.0, -0.1]
             },
             'DeckSlab': {
                 n: 'Bridge Deck Slab', l: '11.40 m (Total Span)', b: '7.00 m (Overall Width)', h: '0.74 m', mat: 'M30 RCC',
                 est: '1 x 11.40 x 7.00 x 0.74 = 59.08 m³ (6.00 m roadway)',
-                target: [0, 6.37, 5.0], r: '15m',
-                p1: [-3.7, 6.74, -0.7], p2: [-3.7, 6.74, 10.7], p3: [3.5, 6.74, -0.7], p4: [-3.7, 6.0, -0.7]
+                target: '0m 0.32m -0.25m', r: '15m',
+                p1: [-3.7, 6.74, 0.7], p2: [-3.7, 6.74, -10.7], p3: [3.5, 6.74, 0.7], p4: [-3.7, 6.0, 0.7]
             },
             'AsphaltWC': {
                 n: 'Wearing Coat (Roadway)', l: '11.40 m', b: '6.00 m (Roadway Width)', h: '0.075 m (75 mm)', mat: 'Asphalt Concrete',
                 est: '1 x 11.40 x 6.00 x 0.075 = 5.13 m³, Bituminous layer',
-                target: [0, 6.77, 5.0], r: '15m',
-                p1: [-3.1, 6.81, -0.7], p2: [-3.1, 6.81, 10.7], p3: [2.9, 6.81, -0.7], p4: [-3.1, 6.74, -0.7]
+                target: '0m 0.34m -0.25m', r: '15m',
+                p1: [-3.1, 6.81, 0.7], p2: [-3.1, 6.81, -10.7], p3: [2.9, 6.81, 0.7], p4: [-3.1, 6.74, 0.7]
             },
             'Backwalls': {
                 n: 'Backwalls / Dirt Walls', l: '7.00 m', b: '0.40 m', h: '1.20 m', mat: 'M25 Concrete',
                 est: '2 x 7.00 x 0.40 x 1.20 = 6.72 m³ behind deck expansion joints',
-                target: [0, 6.37, -0.85], r: '10m',
-                p1: [-3.6, 6.74, -0.85], p2: [3.6, 6.74, -0.85], p3: [-3.6, 6.74, -1.25], p4: [-3.6, 6.0, -0.85]
+                target: '0m 0.32m 0.04m', r: '10m',
+                p1: [-3.6, 6.74, 0.85], p2: [3.6, 6.74, 0.85], p3: [-3.6, 6.74, 1.25], p4: [-3.6, 6.0, 0.85]
             },
             'ApproachSlabs': {
                 n: 'Approach Slabs', l: '3.50 m', b: '7.00 m', h: '0.20 m', mat: 'M25 Concrete',
                 est: '2 x 3.50 x 7.00 x 0.20 = 9.80 m³ slab transitions',
-                target: [0, 6.64, -2.6], r: '12m',
-                p1: [-3.6, 6.74, -0.74], p2: [3.6, 6.74, -0.74], p3: [-3.6, 6.74, -4.24], p4: [-3.6, 6.54, -0.74]
+                target: '0m 0.33m 0.13m', r: '12m',
+                p1: [-3.6, 6.74, 0.74], p2: [3.6, 6.74, 0.74], p3: [-3.6, 6.74, 4.24], p4: [-3.6, 6.54, 0.74]
             },
             'Handrails': {
                 n: 'Handrails & Posts', l: '11.40 m (Dual side)', b: '0.20 m Posts / 0.10 m Rails', h: '1.00 m Post', mat: 'Precast M25 Concrete',
                 est: '15 posts per side with horizontal concrete pipes',
-                target: [-3.5, 7.24, 5.0], r: '12m',
-                p1: [-3.6, 6.74, -0.7], p2: [-3.6, 6.74, 10.7], p3: [-3.4, 6.74, -0.7], p4: [-3.6, 7.74, -0.7]
+                target: '-0.18m 0.36m -0.25m', r: '12m',
+                p1: [-3.6, 6.74, 0.7], p2: [-3.6, 6.74, -10.7], p3: [-3.4, 6.74, 0.7], p4: [-3.6, 7.74, 0.7]
             },
             'RCC_Pipe': {
                 n: 'RCC Humepipe Culvert', l: '10.00 m', b: '0.90 m Outer Dia', h: '0.075 m (Wall)', mat: 'RCC NP3 Pipe',
                 est: '1 x 10.00 m culvert Humepipe under approaches',
-                target: [0, -2.5, 5.0], r: '15m',
-                p1: [-5.0, -2.5, 5.0], p2: [5.0, -2.5, 5.0], p3: [-5.0, -2.5, 5.9], p4: [-5.0, -1.6, 5.0]
+                target: '0m -0.13m -0.25m', r: '15m',
+                p1: [-5.0, -2.5, -5.0], p2: [5.0, -2.5, -5.0], p3: [-5.0, -2.5, -5.9], p4: [-5.0, -1.6, -5.0]
             },
             'ProtectionWalls': {
                 n: 'Protection Walls / Toe Walls', l: '10.00 m', b: '1.00 m (Base) / 0.40 m (Top)', h: '2.50 m', mat: 'M20 plum concrete',
                 est: 'Toe walls to protect embankment fill from river wash',
-                target: [-5.0, -0.1, 0.0], r: '18m',
-                p1: [-5.0, -1.15, -1.05], p2: [5.0, -1.15, -1.05], p3: [-5.0, -1.15, 0.15], p4: [-5.0, 1.35, -1.05]
+                target: '-0.25m -0.01m 0m', r: '18m',
+                p1: [-5.0, -1.15, 1.05], p2: [5.0, -1.15, 1.05], p3: [-5.0, -1.15, -0.15], p4: [-5.0, 1.35, 1.05]
             },
             'GuardStones': {
                 n: 'Guard Stones', l: '0.20 m', b: '0.20 m', h: '1.00 m', mat: 'M25 Concrete',
                 est: '56 precast guard stones along retaining wall copings',
-                target: [-3.9, 7.24, -10.0], r: '12m',
-                p1: [-3.9, 6.74, -10.0], p2: [-3.7, 6.74, -10.0], p3: [-3.9, 6.74, -9.8], p4: [-3.9, 7.74, -10.0]
+                target: '-0.2m 0.36m 0.5m', r: '12m',
+                p1: [-3.9, 6.74, 10.0], p2: [-3.7, 6.74, 10.0], p3: [-3.9, 6.74, 9.8], p4: [-3.9, 7.74, 10.0]
             },
             'Bearings': {
                 n: 'Bearings', l: '0.30 m', b: '0.30 m', h: '0.05 m (50 mm)', mat: 'Elastomeric Neoprene',
                 est: '6 bearings total (3 per side) resting under deck girder positions',
-                target: [1.5, 6.02, -0.35], r: '8m',
-                p1: [1.35, 6.0, -0.5], p2: [1.65, 6.0, -0.5], p3: [1.35, 6.0, -0.2], p4: [1.35, 6.05, -0.5]
+                target: '0.08m 0.3m 0.02m', r: '8m',
+                p1: [1.35, 6.0, 0.5], p2: [1.65, 6.0, 0.5], p3: [1.35, 6.0, 0.2], p4: [1.35, 6.05, 0.5]
             },
             'EarthFill': {
                 n: 'Approach Road Earth Fill', l: '72.00 m (Total length)', b: '7.00 m', h: '6.74 m max', mat: 'Selected cohesive soil',
                 est: 'Earth fill compacted in 20cm layers behind bridge structures',
-                target: [0, 3.37, -10.0], r: '25m',
-                p1: [-3.5, 0, -10.0], p2: [3.5, 0, -10.0], p3: [-3.5, 0, -5.0], p4: [-3.5, 6.74, -10.0]
+                target: '0m 0.17m 0.5m', r: '25m',
+                p1: [-3.5, 0, 10.0], p2: [3.5, 0, 10.0], p3: [-3.5, 0, 5.0], p4: [-3.5, 6.74, 10.0]
             }
         };
 
@@ -1212,7 +1294,7 @@
 
                 // Smooth camera transition: Target the component center and zoom radius
                 const currentOrbit = modelViewer.getCameraOrbit();
-                modelViewer.cameraTarget = `${comp.target[0]}m ${comp.target[1]}m ${comp.target[2]}m`;
+                modelViewer.cameraTarget = comp.target;
                 modelViewer.cameraOrbit = `${currentOrbit.theta}rad ${currentOrbit.phi}rad ${comp.r}`;
 
                 // Update HUD details
@@ -1235,9 +1317,9 @@
             }
         });
 
-        // ═══════════════════════════════════════════════════════════════
+        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
         //  CAD SVG Dimension Lines Engine
-        // ═══════════════════════════════════════════════════════════════
+        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
         // Liang-Barsky parametric line clipping against rect [0, 0, w, h]
         function clipLineToRect(x1, y1, x2, y2, w, h) {
             let t0 = 0, t1 = 1;
