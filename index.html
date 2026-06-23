@@ -1129,6 +1129,7 @@
         const modelViewer = document.querySelector('model-viewer');
         const viewCube = document.getElementById('viewCube');
         const compassRing = document.getElementById('compassRing');
+        const origColors = {};  // saved per-material baseColorFactor from GLB
 
         function togglePanel() {
             document.getElementById('infoPanel').classList.toggle('minimized');
@@ -1150,6 +1151,16 @@
         if (window.innerWidth <= 768) {
             document.getElementById('infoPanel').classList.add('minimized');
         }
+
+        // Save original material colors on load, restore on deselect
+        modelViewer.addEventListener('load', () => {
+            if (modelViewer.model) {
+                modelViewer.model.materials.forEach(m => {
+                    const f = m.pbrMetallicRoughness.baseColorFactor;
+                    origColors[m.name] = [f[0], f[1], f[2], f[3]];
+                });
+            }
+        });
 
         // Home View Reset
         window.resetCameraView = function() {
@@ -1460,7 +1471,10 @@
             if (modelViewer.model) {
                 modelViewer.model.materials.forEach(m => {
                     m.setAlphaMode('OPAQUE');
-                    m.pbrMetallicRoughness.setBaseColorFactor([1, 1, 1, 1]);
+                    const orig = origColors[m.name];
+                    if (orig) {
+                        m.pbrMetallicRoughness.setBaseColorFactor(orig);
+                    }
                 });
             }
         };
@@ -1504,11 +1518,14 @@
 
                 // (Vignette disabled — no blur overlay)
 
-                // Ghost out all non-selected meshes completely (soft transparent outline)
+                // Ghost out non-selected meshes; restore selected material to original color
                 modelViewer.model.materials.forEach(m => {
                     if (m.name === material.name) {
                         m.setAlphaMode('OPAQUE');
-                        m.pbrMetallicRoughness.setBaseColorFactor([1, 1, 1, 1]);
+                        const orig = origColors[m.name];
+                        if (orig) {
+                            m.pbrMetallicRoughness.setBaseColorFactor(orig);
+                        }
                     } else {
                         m.setAlphaMode('BLEND');
                         m.pbrMetallicRoughness.setBaseColorFactor([1, 1, 1, 0.08]);
