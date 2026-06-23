@@ -311,6 +311,46 @@
             to { opacity: 0.5; }
         }
 
+        /* Presentation Vignette Overlay */
+        #vignetteOverlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 5;
+            opacity: 0;
+            transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+            background: rgba(10, 15, 28, 0.55);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            -webkit-mask-image: radial-gradient(ellipse 55% 60% at 50% 50%, transparent 30%, black 75%);
+            mask-image: radial-gradient(ellipse 55% 60% at 50% 50%, transparent 30%, black 75%);
+        }
+        #vignetteOverlay.active { opacity: 1; }
+
+        /* 3D Dimension Label Badges (model-viewer hotspots) */
+        .dim-badge {
+            background: rgba(10, 18, 36, 0.90);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            border: 1.5px solid #0078f5;
+            color: #e0f0ff;
+            padding: 3px 8px;
+            border-radius: 5px;
+            font-size: 11px;
+            font-weight: 700;
+            font-family: 'Courier New', monospace;
+            white-space: nowrap;
+            box-shadow: 0 0 10px rgba(0, 120, 245, 0.5), 0 2px 8px rgba(0,0,0,0.5);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            display: block;
+        }
+        .dim-badge[data-visible] { opacity: 1; }
+
         /* Mobile Adjustments */
         @media (max-width: 768px) {
             .info-panel {
@@ -901,10 +941,18 @@
         <div slot="hotspot-p2" id="hotspot-p2"></div>
         <div slot="hotspot-p3" id="hotspot-p3"></div>
         <div slot="hotspot-p4" id="hotspot-p4"></div>
+
+        <!-- 3D Dimension Label Hotspots -->
+        <div slot="hotspot-dim-l" id="hotspot-dim-l" class="dim-badge">L: -</div>
+        <div slot="hotspot-dim-w" id="hotspot-dim-w" class="dim-badge">W: -</div>
+        <div slot="hotspot-dim-h" id="hotspot-dim-h" class="dim-badge">H: -</div>
     </model-viewer>
 
     <!-- SVG overlay for CAD dimension lines -->
     <svg id="dimensionOverlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 99; display: none;"></svg>
+
+    <!-- Presentation Vignette Blur -->
+    <div id="vignetteOverlay"></div>
 
     <!-- Revit-style 3D View Cube Container -->
     <div class="view-cube-container">
@@ -1268,10 +1316,15 @@
             activeComponentKey = null;
             document.getElementById('cadHud').style.display = 'none';
             document.getElementById('dimensionOverlay').style.display = 'none';
+            document.getElementById('vignetteOverlay').classList.remove('active');
+            ['hotspot-dim-l', 'hotspot-dim-w', 'hotspot-dim-h'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.removeAttribute('data-position');
+            });
             if (modelViewer.model) {
-                modelViewer.model.materials.forEach(m => {
-                    m.pbrMetallicRoughness.setBaseColorFactor([1, 1, 1, 1]);
-                });
+                modelViewer.model.materials.forEach(m =>
+                    m.pbrMetallicRoughness.setBaseColorFactor([1, 1, 1, 1])
+                );
             }
         };
 
@@ -1288,6 +1341,20 @@
                 document.getElementById('hotspot-p3').setAttribute('data-position', comp.p3.join(' '));
                 document.getElementById('hotspot-p4').setAttribute('data-position', comp.p4.join(' '));
 
+                // Place 3D dimension label badges at midpoints of each edge
+                const midL = comp.p1.map((v, i) => (v + comp.p2[i]) / 2);
+                const midW = comp.p1.map((v, i) => (v + comp.p3[i]) / 2);
+                const midH = comp.p1.map((v, i) => (v + comp.p4[i]) / 2);
+                const dimL = document.getElementById('hotspot-dim-l');
+                const dimW = document.getElementById('hotspot-dim-w');
+                const dimH = document.getElementById('hotspot-dim-h');
+                dimL.setAttribute('data-position', midL.join(' '));
+                dimW.setAttribute('data-position', midW.join(' '));
+                dimH.setAttribute('data-position', midH.join(' '));
+                dimL.textContent = 'L: ' + comp.l;
+                dimW.textContent = 'W: ' + comp.b;
+                dimH.textContent = 'H: ' + comp.h;
+
                 // Smooth camera transition: Target the component center and zoom radius
                 const currentOrbit = modelViewer.getCameraOrbit();
                 modelViewer.cameraTarget = comp.target;
@@ -1299,12 +1366,15 @@
                 document.getElementById('hudEst').textContent = 'DPR Estimate: ' + comp.est;
                 document.getElementById('cadHud').style.display = 'flex';
 
-                // Fade out other meshes in the scene
+                // Activate presentation vignette
+                document.getElementById('vignetteOverlay').classList.add('active');
+
+                // Ghost out all non-selected meshes
                 modelViewer.model.materials.forEach(m => {
                     if (m.name === material.name) {
                         m.pbrMetallicRoughness.setBaseColorFactor([1, 1, 1, 1]);
                     } else {
-                        m.pbrMetallicRoughness.setBaseColorFactor([1, 1, 1, 0.12]);
+                        m.pbrMetallicRoughness.setBaseColorFactor([0.15, 0.15, 0.2, 0.06]);
                     }
                 });
             } else {
