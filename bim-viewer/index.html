@@ -1447,24 +1447,32 @@
         }
 
         function mat4LookAt(eyeX, eyeY, eyeZ, targetX, targetY, targetZ, upX, upY, upZ) {
+            // forward = normalize(target - eye)
             let fx = targetX - eyeX, fy = targetY - eyeY, fz = targetZ - eyeZ;
             const fLen = Math.hypot(fx, fy, fz);
             fx /= fLen; fy /= fLen; fz /= fLen;
 
+            // right = normalize(cross(forward, up))
             let rx = fy * upZ - fz * upY;
             let ry = fz * upX - fx * upZ;
             let rz = fx * upY - fy * upX;
             const rLen = Math.hypot(rx, ry, rz);
             rx /= rLen; ry /= rLen; rz /= rLen;
 
+            // up = cross(right, forward)
             let ux = ry * fz - rz * fy;
             let uy = rz * fx - rx * fz;
             let uz = rx * fy - ry * fx;
 
+            // Column-major view matrix:
+            // col 0 = [right.x, up.x, -forward.x, 0]
+            // col 1 = [right.y, up.y, -forward.y, 0]
+            // col 2 = [right.z, up.z, -forward.z, 0]
+            // col 3 = [-dot(right, eye), -dot(up, eye), dot(forward, eye), 1]
             return new Float64Array([
-                rx, ry, rz, 0,
-                ux, uy, uz, 0,
-                -fx, -fy, -fz, 0,
+                rx, ux, -fx, 0,
+                ry, uy, -fy, 0,
+                rz, uz, -fz, 0,
                 -(rx * eyeX + ry * eyeY + rz * eyeZ),
                 -(ux * eyeX + uy * eyeY + uz * eyeZ),
                 fx * eyeX + fy * eyeY + fz * eyeZ,
